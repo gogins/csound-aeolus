@@ -65,6 +65,11 @@ struct csound_aeolus_t
     virtual void initialize(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform)
     {
         csound = csound_;
+        csound->Message(csound, "csound_aeolus_t::initialize...\n");
+        csound->Message(csound, "csound_aeolus_t::stops_directory:       %s\n", stops_directory);
+        csound->Message(csound, "csound_aeolus_t::instruments_directory: %s\n", instruments_directory);
+        csound->Message(csound, "csound_aeolus_t::waves_directory:       %s\n", waves_directory);
+        csound->Message(csound, "csound_aeolus_t::bform:                 %d\n", bform);
         p = getenv ("HOME");
         S_val = stops_directory;
         I_val = instruments_directory;
@@ -110,11 +115,12 @@ struct csound_aeolus_t
         slave->thr_start (SCHED_OTHER, 0, 0x00010000);
         iface->thr_start (SCHED_OTHER, 0, 0x00020000);
         n = 4;
+        csound->Message(csound, "csound_aeolus_t::initialize.\n");
         while (n)
         {
             itcc.get_event (1 << EV_EXIT);
             {
-                csound->Message(csound, "aeolus_csound_t::dispatch received EV_EXIT.\n");
+                csound->Message(csound, "aeolus_csound_t::initialize received EV_EXIT.\n");
                 if (n-- == 4)
                 {
                     imidi->terminate ();
@@ -158,58 +164,56 @@ struct csound_aeolus_t
     }
 };
 
-static std::map<std::string, std::shared_ptr<csound_aeolus_t>> &aeolus_instances_for_ids()
-{
-    static std::map<std::string, std::shared_ptr<csound_aeolus_t>> aeolus_instances_for_ids_;
-    return aeolus_instances_for_ids_;
-}
-
+static std::map<MYFLT, std::shared_ptr<csound_aeolus_t> > instances_for_ids;
 /**
- * S_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory`
+ * i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory`
  */
 struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     STRINGDAT *S_stops_directory;
     STRINGDAT *S_instruments_directory;
     STRINGDAT *S_waves_directory;
     MYFLT *i_bform;
     std::shared_ptr<csound_aeolus_t> aeolus;
     std::thread thread_;
-    void start(CSOUND *csound)
-    {
-        aeolus->initialize(csound, S_stops_directory->data, S_instruments_directory->data, S_waves_directory->data, *i_bform);
-    }
     int init(CSOUND *csound)
     {
-        char id[0x100];
-        std::snprintf(id, 0x100, "%p", this);
-        S_instance_id->data = csound->Strdup(csound, id);
-        S_instance_id->size = strnlen(id, 0x100);
-        auto instances_for_ids = aeolus_instances_for_ids();
+        *i_instance_id = instances_for_ids.size();
         aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
-        instances_for_ids[id] = aeolus;
-        thread_ = std::thread(&aeolus_init_t::start, this, csound);
+        instances_for_ids[*i_instance_id] = aeolus;
+        log(csound, "aeolus_init: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
+        thread_ = std::thread(&csound_aeolus_t::initialize, aeolus.get(), 
+            csound, 
+            S_stops_directory->data, 
+            S_instruments_directory->data, 
+            S_waves_directory->data, 
+            *i_bform);
+        std::this_thread::sleep_for(std::chrono::seconds(20));
+        log(csound, "aeolus_init.\n");
         return 0;
     }
 };
 
 /**
- * aeolus_preset S_aeolus, k_bank, k_preset, S_presets_directory
+ * aeolus_preset i_aeolus, k_bank, k_preset, S_presets_directory
  */
 struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     MYFLT *k_bank;
     MYFLT *k_preset;
     STRINGDAT *S_presets_directory;
     std::shared_ptr<csound_aeolus_t> aeolus;
-    MYFLT k_bank_prior = -1;
-    MYFLT k_preset_prior = -1;
+    MYFLT k_bank_prior;
+    MYFLT k_preset_prior;
     int init(CSOUND *csound)
     {
         int result = 0;
-        aeolus = aeolus_instances_for_ids()[S_instance_id->data];
+        aeolus = instances_for_ids[*i_instance_id];
+        log(csound, "aeolus_preset: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
+        k_bank_prior = -1;
+        k_preset_prior = -1;
         aeolus->d_val = S_presets_directory->data;
         return result;
     }
@@ -222,10 +226,12 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
             MYFLT channel = 0;
             MYFLT controller_number = 98;
             MYFLT zero = 0;
+            log(csound, "aeolus_preset: bank %f  preset %f in %s...\n", k_bank_prior, k_preset_prior, S_presets_directory->data);
             aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_bank);
             aeolus->audio->csound_midi(&program_change, &channel, k_preset, &zero);
             k_bank_prior = *k_bank;
             k_preset_prior = *k_preset;
+            log(csound, "aeolus_preset: bank %f  preset %f.\n", k_bank_prior, k_preset_prior);
         }
         return result;
     }
@@ -234,11 +240,11 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
 /**
  * Send arbitary MIDI channel messages to Aeolus.
  *
- * aeolus_midi S_aeolus, k_status, k_channel, k_data1, k_data2
+ * aeolus_midi i_aeolus, k_status, k_channel, k_data1, k_data2
  */
 struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     MYFLT *k_status;
     MYFLT *k_channel;
     MYFLT *k_data1;
@@ -251,7 +257,7 @@ struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
     int init(CSOUND *csound)
     {
         int result = 0;
-        aeolus = aeolus_instances_for_ids()[S_instance_id->data];
+        aeolus = instances_for_ids[*i_instance_id];
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -268,7 +274,7 @@ struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
 };
 
 /**
- * aeolus_group_mode S_aeolus, k_group, k_mode
+ * aeolus_group_mode i_aeolus, k_group, k_mode
 
   v = 01mm0ggg
 
@@ -293,7 +299,7 @@ struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
  */
 struct aeolus_group_mode_t : public csound::OpcodeBase<aeolus_group_mode_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     MYFLT *k_group;
     MYFLT *k_mode;
     MYFLT k_group_prior;
@@ -302,7 +308,7 @@ struct aeolus_group_mode_t : public csound::OpcodeBase<aeolus_group_mode_t>
     int init(CSOUND *csound)
     {
         int result = 0;
-        aeolus = aeolus_instances_for_ids()[S_instance_id->data];
+        aeolus = instances_for_ids[*i_instance_id];
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -325,7 +331,7 @@ struct aeolus_group_mode_t : public csound::OpcodeBase<aeolus_group_mode_t>
 };
 
 /**
- * aeolus_stop S_aeolus, k_stop_button
+ * aeolus_stop i_aeolus, k_stop_button
 
   v = 000bbbbb
 
@@ -340,14 +346,14 @@ struct aeolus_group_mode_t : public csound::OpcodeBase<aeolus_group_mode_t>
  */
 struct aeolus_stop_t : public csound::OpcodeBase<aeolus_stop_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     MYFLT *k_stop;
     MYFLT k_stop_prior;
     std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
         int result = 0;
-        aeolus = aeolus_instances_for_ids()[S_instance_id->data];
+        aeolus = instances_for_ids[*i_instance_id];
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -364,11 +370,11 @@ struct aeolus_stop_t : public csound::OpcodeBase<aeolus_stop_t>
 };
 
 /**
- * aeolus_note S_aeolus, i_midi_channel, i_midi_key, i_midi_velocity
+ * aeolus_note i_aeolus, i_midi_channel, i_midi_key, i_midi_velocity
  */
 struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     MYFLT *i_channel;
     MYFLT *i_midi_key;
     MYFLT *i_midi_velocity;
@@ -378,7 +384,7 @@ struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
     int init(CSOUND *csound)
     {
         int result = 0;
-        aeolus = aeolus_instances_for_ids()[S_instance_id->data];
+        aeolus = instances_for_ids[*i_instance_id];
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -396,18 +402,18 @@ struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
 };
 
 /**
- * a_out[] aeolus_out S_aeolus
+ * a_out[] aeolus_out i_aeolus
  */
 struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
 {
-    STRINGDAT *S_instance_id;
+    MYFLT *i_instance_id;
     ARRAYDAT *v_output;
     std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
-        log(csound, "Began aeolus_out...");
+        log(csound, "Began aeolus_out...\n");
         int result = 0;
-        aeolus = aeolus_instances_for_ids()[S_instance_id->data];
+        aeolus = instances_for_ids[*i_instance_id];
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -421,7 +427,7 @@ struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
     {
         int result = 0;
         aeolus->terminate();
-        log(csound, "Ended aeolus_out.");
+        log(csound, "Ended aeolus_out.\n");
         return result;
     }
 };
@@ -430,86 +436,86 @@ extern "C"
 {
     OENTRY oentries[] =
     {
-        // S_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform
+        // i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform
         {
             (char*)"aeolus_init",
             sizeof(aeolus_init_t),
             0,
             1,
-            (char*)"S",
+            (char*)"i",
             (char*)"SSSi",
             (SUBR) aeolus_init_t::init_,
             0,
             0,
         },
-        // aeolus_preset S_aeolus, i_bank, i_preset, S_presets_directory
+        // aeolus_preset i_aeolus, k_bank, k_preset, S_presets_directory
         {
             (char*)"aeolus_preset",
             sizeof(aeolus_preset_t),
             0,
             3,
             (char*)"",
-            (char*)"SiiS",
+            (char*)"ikkS",
             (SUBR) aeolus_preset_t::init_,
             (SUBR) aeolus_preset_t::kontrol_,
             0,
         },
-        // aeolus_midi S_aeolus, k_status, k_channel, k_data1 [, k_data2]
+        // aeolus_midi i_aeolus, k_status, k_channel, k_data1 [, k_data2]
         {
             (char*)"aeolus_midi",
             sizeof(aeolus_midi_t),
             0,
             3,
             (char*)"",
-            (char*)"Skkkj",
+            (char*)"ikkkj",
             (SUBR) aeolus_midi_t::init_,
             (SUBR) aeolus_midi_t::kontrol_,
             0,
         },
-        // aeolus_group_mode S_aeolus, k_group, k_mode
+        // aeolus_group_mode i_aeolus, k_group, k_mode
         {
             (char*)"aeolus_group_mode",
             sizeof(aeolus_group_mode_t),
             0,
             3,
             (char*)"",
-            (char*)"Skk",
+            (char*)"ikk",
             (SUBR) aeolus_group_mode_t::init_,
             (SUBR) aeolus_group_mode_t::kontrol_,
             0,
         },
-        // aeolus_stop S_aeolus, k_stop_button
+        // aeolus_stop i_aeolus, k_stop_button
         {
             (char*)"aeolus_stop",
             sizeof(aeolus_stop_t),
             0,
             3,
             (char*)"",
-            (char*)"Sk",
+            (char*)"ik",
             (SUBR) aeolus_stop_t::init_,
             (SUBR) aeolus_stop_t::kontrol_,
             0,
         },
-        // aeolus_note S_aeolus, i_midi_channel, i_midi_key, i_midi_velocity
+        // aeolus_note i_aeolus, i_midi_channel, i_midi_key, i_midi_velocity
         {
             (char*)"aeolus_note",
             sizeof(aeolus_note_t),
             0,
             1,
             (char*)"",
-            (char*)"Siii",
+            (char*)"iiii",
             (SUBR) aeolus_note_t::init_,
             0,
             0,
         },
-        // a_out[] aeolus_out S_aeolus
+        // a_out[] aeolus_out i_aeolus
         {
             (char*)"aeolus_out",
             sizeof(aeolus_out_t),
             0,
             3,
             (char*)"a[]",
-            (char*)"S",
+            (char*)"i",
             (SUBR) aeolus_out_t::init_,
             (SUBR) aeolus_out_t::kontrol_,
             0,

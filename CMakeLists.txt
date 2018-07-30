@@ -36,37 +36,36 @@ message(STATUS "PLUGIN_INSTALL_DIR: ${PLUGIN_INSTALL_DIR}")
 add_library(csound_aeolus SHARED 
     src/csound_aeolus.cpp
     src/csound_audio.cc
-aeolus/source/addsynth.cc
-aeolus/source/addsynth.h
-aeolus/source/asection.cc
-aeolus/source/asection.h
-aeolus/source/callbacks.h
-aeolus/source/division.cc
-aeolus/source/division.h
-aeolus/source/exp2ap.cc
-aeolus/source/global.h
-aeolus/source/iface.h
-aeolus/source/imidi.cc
-aeolus/source/imidi.h
-aeolus/source/lfqueue.cc
-aeolus/source/lfqueue.h
-aeolus/source/messages.h
-aeolus/source/model.cc
-aeolus/source/model.h
-
-aeolus/source/prbsgen.h
-aeolus/source/rankwave.cc
-aeolus/source/rankwave.h
-aeolus/source/reverb.cc
-aeolus/source/reverb.h
-aeolus/source/rngen.cc
-aeolus/source/rngen.h
-aeolus/source/scales.cc
-aeolus/source/scales.h
-aeolus/source/slave.cc
-aeolus/source/slave.h
-aeolus/source/tiface.cc
-aeolus/source/tiface.h
+    aeolus/source/addsynth.cc
+    aeolus/source/addsynth.h
+    aeolus/source/asection.cc
+    aeolus/source/asection.h
+    aeolus/source/callbacks.h
+    aeolus/source/division.cc
+    aeolus/source/division.h
+    aeolus/source/exp2ap.cc
+    aeolus/source/global.h
+    aeolus/source/iface.h
+    aeolus/source/imidi.cc
+    aeolus/source/imidi.h
+    aeolus/source/lfqueue.cc
+    aeolus/source/lfqueue.h
+    aeolus/source/messages.h
+    aeolus/source/model.cc
+    aeolus/source/model.h
+    aeolus/source/prbsgen.h
+    aeolus/source/rankwave.cc
+    aeolus/source/rankwave.h
+    aeolus/source/reverb.cc
+    aeolus/source/reverb.h
+    aeolus/source/rngen.cc
+    aeolus/source/rngen.h
+    aeolus/source/scales.cc
+    aeolus/source/scales.h
+    aeolus/source/slave.cc
+    aeolus/source/slave.h
+    aeolus/source/tiface.cc
+    aeolus/source/tiface.h
     )
 target_compile_definitions(csound_aeolus PUBLIC 
     VERSION="0.1.0")
