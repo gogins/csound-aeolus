@@ -16,7 +16,7 @@ gS_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0
 
 // aeolus_preset S_aeolus, i_bank, i_preset, S_presets_directory
 
-aeolus_preset gS_aeolus, 1, 1, "~/.aeolus-presets"
+//aeolus_preset gS_aeolus, 1, 1, "~/.aeolus-presets"
 
 ; Send notes from the score to the Aeolus.
 instr 1 
@@ -25,9 +25,9 @@ aeolus_note gS_aeolus, imidichannel, p4, p5
 endin
 
 ; Send audio from the Aeolus to the output.
-instr 3 
+instr aeolus_output 
 a_out[] init 2
-a_out aeolus_out gS_aeolus
+//a_out aeolus_out gS_aeolus
 out a_out
 endin
 

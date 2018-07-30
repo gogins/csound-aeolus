@@ -33,59 +33,50 @@ message(STATUS "BUILD_PLUGINS_DIR: ${BUILD_PLUGINS_DIR}.")
 set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins64-${APIVERSION}")
 message(STATUS "LIBRARY INSTALL DIR: ${LIBRARY_INSTALL_DIR}")
 message(STATUS "PLUGIN_INSTALL_DIR: ${PLUGIN_INSTALL_DIR}")
-# Just to make sure it builds and runs on the machine...
-ExternalProject_Add(aeolus
-    GIT_REPOSITORY  https://salsa.debian.org/multimedia-team/aeolus.git
-    GIT_TAG   master
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/aeolus/source/source"
-    BUILD_IN_SOURCE "1"
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND make
-    INSTALL_COMMAND "")
-set(aeolus_csound_SRCS
+add_library(csound_aeolus SHARED 
     src/csound_aeolus.cpp
     src/csound_audio.cc
-aeolus/source/source/addsynth.cc
-aeolus/source/source/addsynth.h
-aeolus/source/source/asection.cc
-aeolus/source/source/asection.h
-aeolus/source/source/callbacks.h
-aeolus/source/source/division.cc
-aeolus/source/source/division.h
-aeolus/source/source/exp2ap.cc
-aeolus/source/source/global.h
-aeolus/source/source/iface.h
-aeolus/source/source/imidi.cc
-aeolus/source/source/imidi.h
-aeolus/source/source/lfqueue.cc
-aeolus/source/source/lfqueue.h
-aeolus/source/source/messages.h
-aeolus/source/source/model.cc
-aeolus/source/source/model.h
-aeolus/source/source/prbsgen.h
-aeolus/source/source/rankwave.cc
-aeolus/source/source/rankwave.h
-aeolus/source/source/reverb.cc
-aeolus/source/source/reverb.h
-aeolus/source/source/rngen.cc
-aeolus/source/source/rngen.h
-aeolus/source/source/scales.cc
-aeolus/source/source/scales.h
-aeolus/source/source/slave.cc
-aeolus/source/source/slave.h
-aeolus/source/source/tiface.cc
-aeolus/source/source/tiface.h
+aeolus/source/addsynth.cc
+aeolus/source/addsynth.h
+aeolus/source/asection.cc
+aeolus/source/asection.h
+aeolus/source/callbacks.h
+aeolus/source/division.cc
+aeolus/source/division.h
+aeolus/source/exp2ap.cc
+aeolus/source/global.h
+aeolus/source/iface.h
+aeolus/source/imidi.cc
+aeolus/source/imidi.h
+aeolus/source/lfqueue.cc
+aeolus/source/lfqueue.h
+aeolus/source/messages.h
+aeolus/source/model.cc
+aeolus/source/model.h
+
+aeolus/source/prbsgen.h
+aeolus/source/rankwave.cc
+aeolus/source/rankwave.h
+aeolus/source/reverb.cc
+aeolus/source/reverb.h
+aeolus/source/rngen.cc
+aeolus/source/rngen.h
+aeolus/source/scales.cc
+aeolus/source/scales.h
+aeolus/source/slave.cc
+aeolus/source/slave.h
+aeolus/source/tiface.cc
+aeolus/source/tiface.h
     )
-add_library(aeolus_csound SHARED ${aeolus_csound_SRCS})
-target_compile_definitions(aeolus_csound PUBLIC 
+target_compile_definitions(csound_aeolus PUBLIC 
     VERSION="0.1.0")
-target_include_directories(aeolus_csound PRIVATE 
-    "${CMAKE_CURRENT_SOURCE_DIR}/aeolus/source/source" 
+target_include_directories(csound_aeolus PRIVATE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/aeolus/source" 
     "/usr/local/include/csound"
     ".")
-target_link_libraries(aeolus_csound PRIVATE ${CSOUNDLIB} asound clthreads pthread readline m dl)
+target_link_libraries(csound_aeolus PRIVATE ${CSOUNDLIB} asound clthreads pthread readline m dl)
 set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins64-${APIVERSION}")
-install(TARGETS aeolus_csound
+install(TARGETS csound_aeolus
     LIBRARY DESTINATION ${PLUGIN_INSTALL_DIR}
     ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR})
 

@@ -151,25 +151,4 @@ Bank select     Controller 32   Value mask 000bbbbb (b bank)
 Group mode      Controller 98   Value mask 01mm0ggg (m mode g group)
 Stop select     Controller 98   Value mask 000bbbbb (b stop button)
 
-## Development log
-
-2018 July 29
-
-All buil and installed. Starts to run but doesn't work. 
-
-The stops directory had to be set to an absolute path, no ~.
-
-The other directories must be subdirectories of the stops directory.
-
-The stops retune, and then it hangs. I suspect the end of the initialize 
-method, copied from main.cc, should not run an event queue as this may be 
-blocking csound. If that is the case, a separate thread should be started 
-to run the event queue, or dispatching should in the output opcode.
-
-
-
-
-
-
-
 

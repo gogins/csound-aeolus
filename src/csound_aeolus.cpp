@@ -1,6 +1,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,6 +50,7 @@ struct csound_aeolus_t
     char          *p;
     int            n;
     bool initialized = false;
+    std::thread dispatch_thread;
     csound_aeolus_t()
     {
     }
@@ -107,15 +109,32 @@ struct csound_aeolus_t
         }
         slave->thr_start (SCHED_OTHER, 0, 0x00010000);
         iface->thr_start (SCHED_OTHER, 0, 0x00020000);
+        n = 4;
+        while (n)
+        {
+            itcc.get_event (1 << EV_EXIT);
+            {
+                csound->Message(csound, "aeolus_csound_t::dispatch received EV_EXIT.\n");
+                if (n-- == 4)
+                {
+                    imidi->terminate ();
+                    model->terminate ();
+                    slave->terminate ();
+                    iface->terminate ();
+                }
+            }
+        }
         initialized = true;
     }
     virtual void dispatch() {
+        csound->Message(csound, "aeolus_csound_t::dispatch...\n");
         if (initialized == true) {
             n = 4;
             while (n)
             {
                 itcc.get_event (1 << EV_EXIT);
                 {
+                    csound->Message(csound, "aeolus_csound_t::dispatch received EV_EXIT.\n");
                     if (n-- == 4)
                     {
                         imidi->terminate ();
@@ -125,6 +144,16 @@ struct csound_aeolus_t
                     }
                 }
             }
+        }
+        csound->Message(csound, "aeolus_csound_t::dispatch.\n");
+    }
+    virtual void terminate() {
+        n = 0;
+        if (initialized == true) {
+            imidi->terminate ();
+            model->terminate ();
+            slave->terminate ();
+            iface->terminate ();
         }
     }
 };
@@ -145,6 +174,12 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
     STRINGDAT *S_instruments_directory;
     STRINGDAT *S_waves_directory;
     MYFLT *i_bform;
+    std::shared_ptr<csound_aeolus_t> aeolus;
+    std::thread thread_;
+    void start(CSOUND *csound)
+    {
+        aeolus->initialize(csound, S_stops_directory->data, S_instruments_directory->data, S_waves_directory->data, *i_bform);
+    }
     int init(CSOUND *csound)
     {
         char id[0x100];
@@ -152,9 +187,9 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
         S_instance_id->data = csound->Strdup(csound, id);
         S_instance_id->size = strnlen(id, 0x100);
         auto instances_for_ids = aeolus_instances_for_ids();
-        std::shared_ptr<csound_aeolus_t> aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
+        aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
         instances_for_ids[id] = aeolus;
-        aeolus->initialize(csound, S_stops_directory->data, S_instruments_directory->data, S_waves_directory->data, *i_bform);
+        thread_ = std::thread(&aeolus_init_t::start, this, csound);
         return 0;
     }
 };
@@ -348,24 +383,29 @@ struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
     }
     int kontrol(CSOUND *csound)
     {
+        int result = 0;
         aeolus->audio->csound_midi(&note_on, i_channel, i_midi_key, i_midi_velocity);
+        return result;
     }
     int noteoff(CSOUND *csound)
     {
+        int result = 0;
         aeolus->audio->csound_midi(&note_off, i_channel, i_midi_key, i_midi_velocity);
+        return result;
     }
 };
 
 /**
  * a_out[] aeolus_out S_aeolus
  */
-struct aeolus_out_t : public csound::OpcodeBase<aeolus_out_t>
+struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
 {
     STRINGDAT *S_instance_id;
     ARRAYDAT *v_output;
     std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
+        log(csound, "Began aeolus_out...");
         int result = 0;
         aeolus = aeolus_instances_for_ids()[S_instance_id->data];
         return result;
@@ -373,8 +413,15 @@ struct aeolus_out_t : public csound::OpcodeBase<aeolus_out_t>
     int kontrol(CSOUND *csound)
     {
         int result = 0;
-        aeolus->dispatch();
         aeolus->audio->csound_callback(ksmps(), v_output);
+        ///aeolus->dispatch();
+        return result;
+    }
+    int noteoff(CSOUND *csound)
+    {
+        int result = 0;
+        aeolus->terminate();
+        log(csound, "Ended aeolus_out.");
         return result;
     }
 };
