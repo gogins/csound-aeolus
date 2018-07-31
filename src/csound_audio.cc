@@ -54,6 +54,7 @@ CsoundAudio::~CsoundAudio (void)
 void CsoundAudio::init_audio (void)
 {
     int i;
+    _fsamp = csound->GetSr(csound);
     _audiopar [VOLUME]._val = 0.32f;
     _audiopar [VOLUME]._min = 0.00f;
     _audiopar [VOLUME]._max = 1.00f;
@@ -346,7 +347,6 @@ void CsoundAudio::init_csound(Lfq_u8 *qmidi, bool bform)
 {
     int                 i;
     int                 opts;
-    ///jack_status_t       stat;
     struct sched_param  spar;
     const char          **p;
 
@@ -368,20 +368,31 @@ void CsoundAudio::init_csound(Lfq_u8 *qmidi, bool bform)
     init_audio ();
 }
 
-int CsoundAudio::csound_callback (int nframes, ARRAYDAT *output)
+int CsoundAudio::csound_callback (int &csound_frame_index, 
+    int &csound_frame_count, 
+    int &aeolus_frame_index, 
+    int &aeolus_frame_count, 
+    ARRAYDAT *csound_output)
 {
-    int i;
-    proc_queue (_qnote);
-    proc_queue (_qcomm);
-    proc_keys1 ();
-    proc_keys2 ();
-    proc_synth (nframes);
-    proc_mesg ();
-    // Copy from Aeolus output to Csound output.
-    for (int channel = 0, channels = output->dimensions; channel < channels; ++channel) {
-        for (int frame = 0, frames = output->sizes[channel]; frame < frames; ++frame) {
-            int index = channel * frames + frame;
-            output->data[index] = _outbuf[channel][frame];
+    // Copy audio from the Aeolus output buffer to the opcode output buffer.
+    // The opcode output buffer is a 1-dimensional array of nchnls channels,
+    // and each channel is an a-rate variable, which is actually itself a 
+    // vector of ksmps elements. The Aeolus buffer and the opcode buffer 
+    // usually differ in size.
+    for(csound_frame_index = 0; csound_frame_index < csound_frame_count; ++csound_frame_index, ++aeolus_frame_index) {
+        // Recompute the Aeolus buffer whenever it has been consumed by Csound.
+        if (aeolus_frame_index >= aeolus_frame_count) {
+            proc_queue (_qnote);
+            proc_queue (_qcomm);
+            proc_keys1 ();
+            proc_keys2 ();
+            proc_synth (aeolus_frame_count);
+            proc_mesg ();
+            aeolus_frame_index = 0;
+        }
+        for (int channel = 0, channels = _nplay; channel < channels; ++channel) {
+            int index = (channel * csound_frame_count) + csound_frame_index;
+            csound_output->data[index] = _outbuf[channel][aeolus_frame_index];
         }
     }
     return 0;
@@ -392,6 +403,7 @@ void CsoundAudio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT 
     int                 c, d, f, m, n, t, v;
     t = (int) *status;
     c = (int) *channel;
+    t = t | c;
     n = (int) *key;
     v = (int) *velocity;
     m = _midimap [c] & 127;        // Keyboard and hold bits

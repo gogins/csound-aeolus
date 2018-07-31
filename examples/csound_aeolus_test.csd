@@ -3,18 +3,19 @@
 ; Credits: Adapted by Michael Gogins 
 ; from code by David Horowitz and Lian Cheung. 
 ; the Aeolus GUI to dispatch events and display properly.
--m3 --displays -odac
+-m3 --displays -RWfotest.wav
 </CsOptions>
 <CsInstruments>
 sr = 44100
 ksmps = 20
-nchnls = 2 ; Changed for WebAssembly output from: = 2
+nchnls = 2 
+0dbfs = 1
 
 gi_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0
 
 ; Send notes from the score to the Aeolus.
 instr 1 
-imidichannel init 0
+imidichannel init 1
 aeolus_note gi_aeolus, imidichannel, p4, p5
 endin
 

@@ -36,6 +36,8 @@ message(STATUS "PLUGIN_INSTALL_DIR: ${PLUGIN_INSTALL_DIR}")
 add_library(csound_aeolus SHARED 
     src/csound_aeolus.cpp
     src/csound_audio.cc
+    src/csound_iface.cc
+    src/csound_iface.h
     aeolus/source/addsynth.cc
     aeolus/source/addsynth.h
     aeolus/source/asection.cc
@@ -64,8 +66,6 @@ add_library(csound_aeolus SHARED
     aeolus/source/scales.h
     aeolus/source/slave.cc
     aeolus/source/slave.h
-    aeolus/source/tiface.cc
-    aeolus/source/tiface.h
     )
 target_compile_definitions(csound_aeolus PUBLIC 
     VERSION="0.1.0")

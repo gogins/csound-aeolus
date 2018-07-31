@@ -16,7 +16,7 @@
 #include "model.h"
 #include "slave.h"
 #include "iface.h"
-#include "tiface.h"
+#include "csound_iface.h"
 #include "csound_audio.h"
 #include <OpcodeBase.hpp>
 
@@ -50,7 +50,6 @@ struct csound_aeolus_t
     char          *p;
     int            n;
     bool initialized = false;
-    std::thread dispatch_thread;
     csound_aeolus_t()
     {
     }
@@ -84,8 +83,7 @@ struct csound_aeolus_t
         model = new Model (&comm_queue, &midi_queue, audio->midimap (), audio->appname (), S_val, I_val, W_val, u_opt);
         imidi = new Imidi (&note_queue, &midi_queue, audio->midimap (), audio->appname ());
         slave = new Slave ();
-        // I think ac and av are ignored.
-        iface = new Tiface(0, nullptr);
+        iface = new Csound_iface(0, nullptr);
         ITC_ctrl::connect (audio, EV_EXIT,  &itcc, EV_EXIT);
         ITC_ctrl::connect (audio, EV_QMIDI, model, EV_QMIDI);
         ITC_ctrl::connect (audio, TO_MODEL, model, FM_AUDIO);
@@ -115,7 +113,7 @@ struct csound_aeolus_t
         slave->thr_start (SCHED_OTHER, 0, 0x00010000);
         iface->thr_start (SCHED_OTHER, 0, 0x00020000);
         n = 4;
-        csound->Message(csound, "csound_aeolus_t::initialize.\n");
+        csound->Message(csound, "csound_aeolus_t::initialize now dispatching...\n");
         while (n)
         {
             itcc.get_event (1 << EV_EXIT);
@@ -130,6 +128,7 @@ struct csound_aeolus_t
                 }
             }
         }
+        csound->Message(csound, "csound_aeolus_t::initialize.\n");
         initialized = true;
     }
     virtual void dispatch() {
@@ -161,6 +160,15 @@ struct csound_aeolus_t
             slave->terminate ();
             iface->terminate ();
         }
+        delete audio;
+        delete imidi;
+        delete model;
+        delete slave;
+        delete iface;
+    }
+    virtual void wait_for_iface()
+    {
+         std::this_thread::sleep_for (std::chrono::seconds(20));
     }
 };
 
@@ -189,7 +197,7 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
             S_instruments_directory->data, 
             S_waves_directory->data, 
             *i_bform);
-        std::this_thread::sleep_for(std::chrono::seconds(20));
+        aeolus->wait_for_iface();
         log(csound, "aeolus_init.\n");
         return 0;
     }
@@ -379,23 +387,18 @@ struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
     MYFLT *i_midi_key;
     MYFLT *i_midi_velocity;
     std::shared_ptr<csound_aeolus_t> aeolus;
-    MYFLT note_on = 0x90;
-    MYFLT note_off = 0x80;
     int init(CSOUND *csound)
     {
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
-        return result;
-    }
-    int kontrol(CSOUND *csound)
-    {
-        int result = 0;
+        MYFLT note_on = 0x90;
         aeolus->audio->csound_midi(&note_on, i_channel, i_midi_key, i_midi_velocity);
         return result;
     }
     int noteoff(CSOUND *csound)
     {
         int result = 0;
+        MYFLT note_off = 0x80;
         aeolus->audio->csound_midi(&note_off, i_channel, i_midi_key, i_midi_velocity);
         return result;
     }
@@ -408,19 +411,26 @@ struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
 {
     ARRAYDAT *v_output;
     MYFLT *i_instance_id;
-   std::shared_ptr<csound_aeolus_t> aeolus;
+    std::shared_ptr<csound_aeolus_t> aeolus;
+    int csound_frame_index;
+    int csound_frame_count;
+    int aeolus_frame_index;
+    int aeolus_frame_count;
     int init(CSOUND *csound)
     {
         log(csound, "Began aeolus_out...\n");
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
+        csound_frame_index = 0;
+        csound_frame_count = ksmps();
+        aeolus_frame_index = PERIOD;
+        aeolus_frame_count = PERIOD;
         return result;
     }
     int kontrol(CSOUND *csound)
     {
         int result = 0;
-        aeolus->audio->csound_callback(ksmps(), v_output);
-        ///aeolus->dispatch();
+        aeolus->audio->csound_callback(csound_frame_index, csound_frame_count, aeolus_frame_index, aeolus_frame_count, v_output);
         return result;
     }
     int noteoff(CSOUND *csound)
