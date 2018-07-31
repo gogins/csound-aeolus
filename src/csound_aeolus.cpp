@@ -406,9 +406,9 @@ struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
  */
 struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
 {
-    MYFLT *i_instance_id;
     ARRAYDAT *v_output;
-    std::shared_ptr<csound_aeolus_t> aeolus;
+    MYFLT *i_instance_id;
+   std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
         log(csound, "Began aeolus_out...\n");
