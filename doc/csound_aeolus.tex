@@ -1,0 +1,228 @@
+\documentclass[english,11pt,letterpaper,onecolumn]{scrartcl}
+\usepackage{tocloft}
+\usepackage{stdclsdv}
+\usepackage{comment}
+\usepackage{vmargin}
+\usepackage{t1enc}
+\usepackage{fancyvrb}
+\usepackage{url}
+\usepackage{calc}
+\usepackage{array}
+\usepackage{scrpage2}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{listings}
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+\usepackage{supertabular}
+\usepackage[pdftex,
+colorlinks=true,
+linkcolor=blue,
+pdfpagelabels,
+pdfstartpage=2
+]{hyperref}
+\pagestyle{scrheadings}
+\definecolor{LstColor}{cmyk}{0.1,0.1,0,0.025} 
+\usepackage[
+backend=biber,
+style=numeric,
+sorting=ynt,
+hyperref=true,
+backref=true
+]{biblatex}
+% Title Page
+\title{Aeolus Opcodes for Csound}
+\author{Michael Gogins}
+\begin{document}
+\lstset{basicstyle=\ttfamily,commentstyle=\ttfamily\tiny,tabsize=2,breaklines,fontadjust=true,keepspaces=false,fancyvrb=true,showstringspaces=false,moredelim=[is][\textbf]{\\emph\{}{\}}}
+	
+\maketitle
+
+\begin{abstract}
+	These Csound plugin opcodes bring the Aeolus software organ by Fons Adriaensen into Csound on Linux.
+\end{abstract}
+
+\section{Introduction}
+
+The Aeolus software organ (\url{https://kokkinizita.linuxaudio.org/linuxaudio/aeolus}) by Fons Adriaensen (\url{https://kokkinizita.linuxaudio.org}) provides a high-quality software emulation of a traditional pipe organ on Linux and OSX. Aeolus is particulary wonderful because it enables users to create their own organs, using an ordinary text editor. The program is available as a Debian package (\url{https://packages.debian.org/search?keywords=aeolus}).
+
+The Aeolus program runs both as an X Windows program, and as a text-mode program. Aeolus can use either Jack or ALSA for audio and MIDI connections.
+
+Csound (\url{https://csound.com/}) is, of course, one of the oldest and most powerful user-programmable software synthesizers. These opcodes bring all the functionality of Aeolus into Csound as a set of plugin opcodes. Although of course Aeolus already can be used with Csound by means of the Jack audio connection kit (\url{http://jackaudio.org}) and Csound's Jacko opcodes ({\url{https://csound.com/docs/manual/indexframes.html}), using these Aeolus opcodes is \textit{considerably} simpler and easier. 
+
+Basically, you run the Aeolus program to define and save presets. Then, in your Csound orchestra, you create an instance of Aeolus, load stops and an instrument, and select a preset. Csound will then play the instrument according to the MIDI configuration saved in the preset.
+
+A simple example of this can be found in the \url{examples/aeolus-example.csd} file.
+
+For more information on how to use Aeolus, see \url{http://www.muse-sequencer.org/index.php/Aeolus}.
+
+For some examples of music recorded using Aeolus, see \url{https://kokkinizita.linuxaudio.org/linuxaudio/aeolus/index.html}.
+
+\section{Reference}
+
+\subsection*{aeolus\_init}
+
+Creates an instance of Aeolus for use by other opcodes. In theory, it is possible to run any number of instances of Aeolus in one Csound orchestra. This should be done in the orchestra header, before other instruments using Aeolus opcodes are defined.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|i_aeolus aeolus_init S_stops_directory, S_instruments_directory, S_waves_directory, i_bform, i_wait_seconds|
+	\item[Parameters]
+	\item[]\lstinline|S_stops_directory| The complete pathname to the Aeolus stops directory, e.g. \lstinline|/home/mkg/stops-0.3.0|
+	\item[]\lstinline|S_instruments_directory| A directory containing an Aeolus instrument definition, typically a subdirectory of the stops directory.
+	\item[]\lstinline|S_waves_directory| A writable directory where Aeolus can write its wave tables, typically a subdirectory of the stops directory.
+	\item[]\lstinline|i_bform| If 1, Aeolus outputs audio in first-order Ambisonic B-format; if 0, Aeolus outputs audio in stereo.
+	\item[]\lstinline|i_wait_seconds| Aeolus starts up, loads presets, computes wave tables, etc. in separate threads. Playing notes before these have completed will cause problems. Use this parameter to specify a number of seconds, to be determined by trial and error, to wait before performing.
+	\item[Return Value]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus, which can be passed to other Aeolus opcodes.
+\end{description}
+
+\subsection*{aeolus\_preset}
+
+Specifies which of 32 banks of presents, and which of 32 presets in each bank, are to be used for performance. The banks and presets must be defined before running Csound, using the regular Aeolus program.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|aeolus_preset i_aeolus, k_bank, k_preset, S_presets_directory|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[]\lstinline|k_bank| The bank number, from 1 through 32.
+	\item[]\lstinline|k_preset| The preset number, from 1 through 32.
+	\item[]\lstinline|S_presets_directory| The directory containing the presets, typically \lstinline|~/.aeolus-presets|
+\end{description}
+
+\subsection*{aeolus\_midi}
+
+Sends raw MIDI channel messages at k-rate to Aeolus. If all other means fail, you should be able to get Aeolus to do what you want with this. Parameters that are not required by a specific channel message are ignored and can be any value. Messages are actually sent to Aeolus only when the value of a parameter changes.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|aeolus_midi i_aeolus, k_status, k_channel, k_data1, k_data2|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[]\lstinline|k_status| The MIDI status opcode, e.g. \verb|0x90| for a "note on" message.
+	\item[]\lstinline|k_channel| The MIDI channel number, from 0 through 15. Note that for this opcode, the MIDI status opcode (high order nybble) and the MIDI channel number (low-order nybble) are broken out into separate parameters for convenience.
+	\item[]\lstinline|k_data1| The first byte of the MIDI channel message.
+	\item[]\lstinline|k_data2| The second byte of the MIDI channel message.
+\end{description}
+
+\subsection*{aeolus\_group\_mode}
+
+Sets the mode that will be used for controlling a group of stops. The groups are defined by lines in the Aeolus graphical user interface, e.g.\ a Division is a group.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|aeolus_group_mode i_aeolus, k_group, k_mode|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[]\lstinline|k_group| The number of the group, counting from 0 for the topmost group (e.g.\ Division III) up to the bottom group.
+	\item[]\lstinline|k_mode| The mode of operation for the group: 0 to reset all buttons (disable the group), 1 means setting a stop will turn it off, 2 means setting a stop will turn it on, and 3 means setting a stop will toggle it from off to on, or from on to off.
+\end{description}
+
+\subsection*{aeolus\_stop}
+
+Invoke a stop according to the mode of operation previously specified for its group.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|aeolus_stop i_aeolus, k_stop_button|
+	\item[]\lstinline|aeolus_group_mode i_aeolus, k_group, k_mode|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[]\lstinline|k_stop_button| The number of the stop button. Stops are numbered from 0 at the top left of the user interface on up to the bottom right of the interface.
+\end{description}
+
+\subsection*{aeolus\_note}
+
+Sends a note to Aeolus on the specified MIDI channel. Note that a 12 tone scale is assumed, that pressing a key twice before a note is over does nothing, and that the MIDI velocity does nothing, just as on a real organ. 
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|aeolus_note i_aeolus, i_midi_channel, i_midi_key, i_midi_velocity|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[]\lstinline|i_midi_channel]| The MIDI channel for the note. Aeolus will play the Division, Rank, or combination assigned to that channel by the MIDI setup of the preset.
+	\item[]\lstinline|i_midi_key| The standard MIDI key number. Fractional values are rounded down to the nearest integer. However, the scale defined by a preset is used to derive the frequency of the key. This can be based on $A = 440$ or some other value, or on any of a number of traditional organ tunings, such as standard equal temperament, or Vogel/Ahrend, as specified in the Instrument settings of the preset.
+	\item[]\lstinline|i_midi_velocity| Should be non-zero but does not affect loudness.
+\end{description}
+
+\subsection*{aeolus\_command}
+
+Sends a text-format command to Aeolus. These are exactly the same as the ones used in the text-mode interface to Aeolus. Note that these commands are not complete.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|aeolus_command i_aeolus, S_command|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[]\lstinline|S_command| The command text.
+\end{description}
+
+\subsection*{aeolus\_out}
+
+Outputs all audio synthesized for each note of an Aeolus instance. This opcode should be used in an always-on instrument, and possibly routed to other instruments in Csound, e.g.\ to apply further processing or effects.
+
+\begin{description}
+	\item[Synopsis]
+	\item[]\lstinline|a_out[] aeolus_out i_aeolus|
+	\item[Parameters]
+	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
+	\item[Return Value]
+	\item[]\lstinline|a_out[]| An audio-rate array containing the audio output from Aeolus. If Ambisonic B-format has been specified during initialization, this array will contain 4 elements for the $W, X, Y,$ and $Z$ components of the signal. If stereo has been specified, this array will contain 2 elements for the left and right channels.
+\end{description}
+
+\section{User Guide}
+
+Before using these opcodes, you should install the regular Aeolus program including stops, configure it, test it, and define some presets that you will use in Csound.
+
+Install the \lstinline|libcsound_aeolus.so| plugin in your Csound plugins directory, e.g. \lstinline|/usr/local/lib/csound/plugins64-6.0|.
+
+In the header of your Csound orchestra, instantiate Aeolus as a global variable as follows:
+
+\begin{lstlisting}
+gi_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0, 5
+\end{lstlisting}
+
+\noindent In the orchestra, define an instrument that will send notes from the Csound score to Aeolus:
+
+\begin{lstlisting}
+instr 1 
+imidichannel init 1
+aeolus_note gi_aeolus, imidichannel, p4, p5
+endin
+\end{lstlisting}
+
+\noindent Also define an always-on instrument that will route the audio output from Aeolus either to the output soundfile (as shown) or to further processing in Csound. In this instrument, you should also set up your presets, stops, or other configuration:
+
+\begin{lstlisting}
+instr 2 
+aeolus_preset gi_aeolus, 1, 1, "~/.aeolus-presets"
+a_out[] init 2
+a_out aeolus_out gi_aeolus
+out a_out
+\end{lstlisting}
+
+\noindent In the Csound score, turn on the output instrument, and send notes to Aeolus:
+
+\begin{lstlisting}
+; Turn on the instrument that receives audio from the Aeolus indefinitely.
+i 2 0 -1
+; Send a C major 7th arpeggio to the Aeolus.
+i 1 1 10 60 76
+i 1 2 10 64 73
+i 1 3 10 67 70 
+i 1 4 10 71 67
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+\end{document}          
+
