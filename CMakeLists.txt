@@ -79,7 +79,14 @@ set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins64-${APIVERSION}")
 install(TARGETS csound_aeolus
     LIBRARY DESTINATION ${PLUGIN_INSTALL_DIR}
     ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR})
+set(SHARE_INSTALL_DIR "share/csound-aeolus")
+install(FILES "README.md"
+    "LICENSE"
+    DESTINATION  ${SHARE_INSTALL_DIR})
+install(FILES "doc/csound_aeolus.pdf"
+    DESTINATION  ${SHARE_INSTALL_DIR})
 
+include (CPack)
 
 
 
