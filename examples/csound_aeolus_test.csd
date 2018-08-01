@@ -11,7 +11,7 @@ ksmps = 128
 nchnls = 2 
 0dbfs = 1
 
-gi_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0, 8
+gi_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0, 5
 
 ; Send notes from the score to the Aeolus.
 instr 1 

@@ -48,7 +48,6 @@ struct csound_aeolus_t
     char           s [1024];
     char          *p;
     int            n;
-    int waitseconds;
     csound_aeolus_t()
     {
     }
@@ -129,21 +128,10 @@ struct csound_aeolus_t
         }
         csound->Message(csound, "csound_aeolus_t::run.\n");
     }
-    virtual void terminate() {
-        n = 0;
-        imidi->terminate ();
-        model->terminate ();
-        slave->terminate ();
-        iface->terminate ();
-        delete audio;
-        delete imidi;
-        delete model;
-        delete slave;
-        delete iface;
-    }
 };
 
 static std::map<MYFLT, std::shared_ptr<csound_aeolus_t> > instances_for_ids;
+
 /**
  * i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds`
  */
@@ -378,6 +366,24 @@ struct aeolus_note_t : public csound::OpcodeNoteoffBase<aeolus_note_t>
 };
 
 /**
+ * aeolus_command i_aeolus, i_midi_channel, i_midi_key, i_midi_velocity
+ */
+struct aeolus_command_t : public csound::OpcodeBase<aeolus_command_t>
+{
+    MYFLT *i_instance_id;
+    STRINGDAT *S_command;
+    std::shared_ptr<csound_aeolus_t> aeolus;
+    int init(CSOUND *csound)
+    {
+        int result = 0;
+        aeolus = instances_for_ids[*i_instance_id];
+        MYFLT note_on = 0x90;
+        aeolus->iface->parse_command(S_command->data);
+        return result;
+    }
+};
+
+/**
  * a_out[] aeolus_out i_aeolus
  */
 struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
@@ -478,6 +484,18 @@ extern "C"
             (SUBR) aeolus_stop_t::kontrol_,
             0,
         },
+        // aeolus_command i_aeolus, S_command
+        {
+            (char*)"aeolus_note",
+            sizeof(aeolus_command_t),
+            0,
+            1,
+            (char*)"",
+            (char*)"iS",
+            (SUBR) aeolus_command_t::init_,
+            0,
+            0,
+        },
         // aeolus_note i_aeolus, i_midi_channel, i_midi_key, i_midi_velocity
         {
             (char*)"aeolus_note",
@@ -537,6 +555,7 @@ extern "C"
 
     PUBLIC int csoundModuleDestroy(CSOUND *csound)
     {
+        instances_for_ids.clear();
         return 0;
     }
 
