@@ -19,13 +19,13 @@
 
 
 #include <math.h>
-#include "csound_audio.h"
+#include "src/audio.h"
 #include "messages.h"
 
-CsoundAudio::CsoundAudio (CSOUND *csound_, Lfq_u32 *qnote, Lfq_u32 *qcomm) :
-    A_thread ("CsoundAudio"),
+Audio::Audio (CSOUND *csound_, Lfq_u32 *qnote, Lfq_u32 *qcomm) :
+    A_thread ("Audio"),
     csound(csound_),
-    _appname ("CsoundAudio"),
+    _appname ("Audio"),
     _qnote (qnote),
     _qcomm (qcomm),
     _qmidi (0),
@@ -42,7 +42,7 @@ CsoundAudio::CsoundAudio (CSOUND *csound_, Lfq_u32 *qnote, Lfq_u32 *qcomm) :
 }
 
 
-CsoundAudio::~CsoundAudio (void)
+Audio::~Audio (void)
 {
     int i;
     for (i = 0; i < _nasect; i++) delete _asectp [i];
@@ -51,10 +51,9 @@ CsoundAudio::~CsoundAudio (void)
 }
 
 
-void CsoundAudio::init_audio (void)
+void Audio::init_audio (void)
 {
     int i;
-    _fsamp = csound->GetSr(csound);
     _audiopar [VOLUME]._val = 0.32f;
     _audiopar [VOLUME]._min = 0.00f;
     _audiopar [VOLUME]._max = 1.00f;
@@ -83,7 +82,7 @@ void CsoundAudio::init_audio (void)
 }
 
 
-void CsoundAudio::start (void)
+void Audio::start (void)
 {
     M_audio_info  *M;
     int           i;
@@ -97,11 +96,38 @@ void CsoundAudio::start (void)
     send_event (TO_MODEL, M);
 }
 
-void CsoundAudio::thr_main (void)
+
+void Audio::init_csound(Lfq_u8 *qmidi, bool bform)
+{
+    _bform = bform;
+    _qmidi = qmidi;
+
+    if (_bform)
+    {
+        _nplay = 4;
+    }
+    else
+    {
+        _nplay = 2;
+    }
+
+    _fsamp = csound->GetSr(csound);
+    _fsize = csound->GetKsmps(csound);
+    if (_fsize < PERIOD || 
+        ((_fsize % PERIOD) != 0)) {
+        csound->Die(csound, "Aeolus error: Csound ksmps must be an integer multiple of 64.\n");
+    }
+    for (int i = 0; i < _nplay; i++) _outbuf [i] = new float [_fsize];
+    init_audio ();
+}
+
+
+void Audio::thr_main (void)
 {
 }
 
-void CsoundAudio::proc_queue (Lfq_u32 *Q)
+
+void Audio::proc_queue (Lfq_u32 *Q)
 {
     uint32_t  k;
     int       b, c, i, j, n;
@@ -217,7 +243,7 @@ void CsoundAudio::proc_queue (Lfq_u32 *Q)
 }
 
 
-void CsoundAudio::proc_keys1 (void)
+void Audio::proc_keys1 (void)
 {
     int d, m, n;
 
@@ -234,7 +260,7 @@ void CsoundAudio::proc_keys1 (void)
 }
 
 
-void CsoundAudio::proc_keys2 (void)
+void Audio::proc_keys2 (void)
 {
     int d;
 
@@ -242,7 +268,7 @@ void CsoundAudio::proc_keys2 (void)
 }
 
 
-void CsoundAudio::proc_synth (int nframes)
+void Audio::proc_synth (int nframes)
 {
     int           j, k;
     float         W [PERIOD];
@@ -302,7 +328,7 @@ void CsoundAudio::proc_synth (int nframes)
 }
 
 
-void CsoundAudio::proc_mesg (void)
+void Audio::proc_mesg (void)
 {
     ITC_mesg *M;
 
@@ -343,44 +369,10 @@ void CsoundAudio::proc_mesg (void)
     }
 }
 
-void CsoundAudio::init_csound(Lfq_u8 *qmidi, bool bform)
-{
-    int                 i;
-    int                 opts;
-    struct sched_param  spar;
-    const char          **p;
-
-    _bform = bform;
-    _qmidi = qmidi;
-
-    if (_bform)
-    {
-        _nplay = 4;
-    }
-    else
-    {
-        _nplay = 2;
-    }
-
-    _fsamp = csound->GetSr(csound);
-    _fsize = csound->GetKsmps(csound);
-    for (int i = 0; i < _nplay; i++) _outbuf [i] = new float [_fsize];
-    init_audio ();
-}
-/*
-       while (k >= _fsize)
-       	{
-            proc_synth (_fsize);
-            _alsa_handle->play_init (_fsize);
-            for (int i = 0; i < _nplay; i++) _alsa_handle->play_chan (i, _outbuf [i], _fsize);
-            _alsa_handle->play_done (_fsize);
-            k -= _fsize;
-	}
-*/
-int CsoundAudio::csound_callback (int &csound_frame_index, 
-    int &csound_frame_count, 
-    int &aeolus_frame_index, 
-    int &aeolus_frame_count, 
+int Audio::csound_callback (unsigned int &csound_frame_index, 
+    unsigned int &csound_frame_count, 
+    unsigned int &aeolus_frame_index, 
+    unsigned int &aeolus_frame_count, 
     ARRAYDAT *csound_output)
 {
     // Copy audio from the Aeolus output buffer to the opcode output buffer.
@@ -407,16 +399,16 @@ int CsoundAudio::csound_callback (int &csound_frame_index,
     return 0;
 }
 
-void CsoundAudio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *velocity)
+
+void Audio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *velocity)
 {
-    int                 c, d, f, m, n, t, v;
+    int                 c, f, m, n, t, v;
     t = (int) *status;
     c = (int) *channel;
     t = t | c;
     n = (int) *key;
     v = (int) *velocity;
     m = _midimap [c] & 127;        // Keyboard and hold bits
-    d = (_midimap [c] >>  8) & 7;  // Division number if (f & 2)
     f = (_midimap [c] >> 12) & 7;  // Control enabled if (f & 4)
 
     switch (t & 0xF0)

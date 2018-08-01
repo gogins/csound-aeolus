@@ -18,8 +18,9 @@
 // ----------------------------------------------------------------------------
 
 
-#ifndef __CSOUND_AUDIO_H
-#define __CSOUND_AUDIO_H
+#ifndef __AUDIO_H
+#define __AUDIO_H
+
 
 #include <stdlib.h>
 #include <clthreads.h>
@@ -30,12 +31,20 @@
 #include "global.h"
 #include <csdl.h>
 
-class CsoundAudio : public A_thread
+class Audio : public A_thread
 {
 public:
 
-    CsoundAudio (CSOUND *csound, Lfq_u32 *qnote, Lfq_u32 *qcomm);
-    virtual ~CsoundAudio (void);
+    Audio (CSOUND *csound, Lfq_u32 *qnote, Lfq_u32 *qcomm);
+    void init_csound(Lfq_u8 *qmidi, bool bform);
+    void csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *velocity);
+    int csound_callback (unsigned int &csound_frame_index, 
+        unsigned int &csound_frame_count, 
+        unsigned int &aeolus_frame_index, 
+        unsigned int &aeolus_frame_count, 
+        ARRAYDAT *output);
+
+    virtual ~Audio (void);
     void  start (void);
 
     const char  *appname (void) const { return _appname; }
@@ -43,9 +52,6 @@ public:
     int  policy (void) const { return _policy; }
     int  abspri (void) const { return _abspri; }
     int  relpri (void) const { return _relpri; }
-    void init_csound(Lfq_u8 *qmidi, bool bform);
-    void csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *velocity);
-    int csound_callback (int &csound_frame_index, int &csound_frame_count, int &aeolus_frame_index, int &aeolus_frame_count, ARRAYDAT *output);
 
 private:
     CSOUND *csound;
@@ -65,13 +71,11 @@ private:
     {
         _keymap [n] &= ~b;
         _keymap [n] |= 128;
-        // csound->Message(csound, "key_on: n: %d b: %d.\n", n, b);
     }
 
     void key_on (int n, int b)
     {
         _keymap [n] |= b | 128;
-        // csound->Message(csound, "key_on: n: %d b: %d.\n", n, b);
     }
 
     void cond_key_off (int m, int b)

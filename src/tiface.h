@@ -41,11 +41,11 @@ private:
 
 
            
-class Csound_iface : public Iface
+class Tiface : public Iface
 {
 public:
-    Csound_iface (int ac, char *av []);
-    virtual ~Csound_iface (void);
+    Tiface (int ac, char *av []);
+    virtual ~Tiface (void);
     virtual void stop (void);
 
 private:
@@ -71,7 +71,9 @@ private:
     void print_stops_short (int);
     void print_stops_long (int);
     void rewrite_label (const char *);
+    public:
     void parse_command (const char *);
+    private:
     void command_s (const char *);
     int  find_group (const char *);
     int  find_ifelm (const char *, int);

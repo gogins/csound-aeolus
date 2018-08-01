@@ -11,13 +11,12 @@
 #include <signal.h>
 #include <clthreads.h>
 #include <dlfcn.h>
-#include "audio.h"
 #include "imidi.h"
 #include "model.h"
 #include "slave.h"
 #include "iface.h"
-#include "csound_iface.h"
-#include "csound_audio.h"
+#include "src/tiface.h"
+#include "src/audio.h"
 #include <OpcodeBase.hpp>
 
 struct csound_aeolus_t
@@ -40,9 +39,9 @@ struct csound_aeolus_t
     Lfq_u32  note_queue  = Lfq_u32(256);
     Lfq_u32  comm_queue = Lfq_u32(256);
     Lfq_u8   midi_queue = Lfq_u8(1024);
-    Csound_iface   *iface;
+    Tiface   *iface;
     ITC_ctrl       itcc;
-    CsoundAudio   *audio;
+    Audio         *audio;
     Imidi         *imidi;
     Model         *model;
     Slave         *slave;
@@ -61,10 +60,10 @@ struct csound_aeolus_t
         delete slave;
         delete iface;
     }
-    virtual void initialize(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform)
+    virtual void run(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform)
     {
         csound = csound_;
-        csound->Message(csound, "csound_aeolus_t::initialize...\n");
+        csound->Message(csound, "csound_aeolus_t::run...\n");
         csound->Message(csound, "csound_aeolus_t::stops_directory:       %s\n", stops_directory);
         csound->Message(csound, "csound_aeolus_t::instruments_directory: %s\n", instruments_directory);
         csound->Message(csound, "csound_aeolus_t::waves_directory:       %s\n", waves_directory);
@@ -78,12 +77,12 @@ struct csound_aeolus_t
         n_val = csound->GetNchnls(csound);
         u_opt = true;
         if (mlockall (MCL_CURRENT | MCL_FUTURE)) csound->Message(csound, "Warning: memory lock failed.\n");
-        audio = new CsoundAudio (csound, &note_queue, &comm_queue);
+        audio = new Audio (csound, &note_queue, &comm_queue);
         audio->init_csound(&midi_queue, bform);
         model = new Model (&comm_queue, &midi_queue, audio->midimap (), audio->appname (), S_val, I_val, W_val, u_opt);
         imidi = new Imidi (&note_queue, &midi_queue, audio->midimap (), audio->appname ());
         slave = new Slave ();
-        iface = new Csound_iface(0, nullptr);
+        iface = new Tiface(0, nullptr);
         ITC_ctrl::connect (audio, EV_EXIT,  &itcc, EV_EXIT);
         ITC_ctrl::connect (audio, EV_QMIDI, model, EV_QMIDI);
         ITC_ctrl::connect (audio, TO_MODEL, model, FM_AUDIO);
@@ -113,12 +112,12 @@ struct csound_aeolus_t
         slave->thr_start (SCHED_OTHER, 0, 0x00010000);
         iface->thr_start (SCHED_OTHER, 0, 0x00020000);
         n = 4;
-        csound->Message(csound, "csound_aeolus_t::initialize now dispatching...\n");
+        csound->Message(csound, "csound_aeolus_t::run now dispatching...\n");
         while (n)
         {
             itcc.get_event (1 << EV_EXIT);
             {
-                csound->Message(csound, "aeolus_csound_t::initialize received EV_EXIT.\n");
+                csound->Message(csound, "aeolus_csound_t::run received EV_EXIT.\n");
                 if (n-- == 4)
                 {
                     imidi->terminate ();
@@ -128,7 +127,7 @@ struct csound_aeolus_t
                 }
             }
         }
-        csound->Message(csound, "csound_aeolus_t::initialize.\n");
+        csound->Message(csound, "csound_aeolus_t::run.\n");
     }
     virtual void terminate() {
         n = 0;
@@ -141,10 +140,6 @@ struct csound_aeolus_t
         delete model;
         delete slave;
         delete iface;
-    }
-    virtual void wait_for_iface(int seconds)
-    {
-         std::this_thread::sleep_for (std::chrono::seconds(seconds));
     }
 };
 
@@ -168,14 +163,14 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
         aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
         instances_for_ids[*i_instance_id] = aeolus;
         log(csound, "aeolus_init: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
-        int wait_seconds = *i_wait_seconds;
-        thread_ = std::thread(&csound_aeolus_t::initialize, aeolus.get(), 
+        thread_ = std::thread(&csound_aeolus_t::run, aeolus.get(), 
             csound, 
             S_stops_directory->data, 
             S_instruments_directory->data, 
             S_waves_directory->data, 
             *i_bform);
-        aeolus->wait_for_iface(wait_seconds);
+        int wait_seconds = *i_wait_seconds;
+        std::this_thread::sleep_for (std::chrono::seconds(wait_seconds));        
         log(csound, "aeolus_init.\n");
         return 0;
     }
@@ -250,9 +245,9 @@ struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
     {
         int result = 0;
         if (*k_status != k_status_prior ||
-                *k_channel != k_channel_prior ||
-                *k_data1 != k_data1_prior ||
-                *k_data2 != k_data2_prior) {
+            *k_channel != k_channel_prior ||
+            *k_data1 != k_data1_prior ||
+            *k_data2 != k_data2_prior) {
             aeolus->audio->csound_midi(k_status, k_channel, k_data1, k_data2);
         }
         return result;
@@ -390,10 +385,10 @@ struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
     ARRAYDAT *v_output;
     MYFLT *i_instance_id;
     std::shared_ptr<csound_aeolus_t> aeolus;
-    int csound_frame_index;
-    int csound_frame_count;
-    int aeolus_frame_index;
-    int aeolus_frame_count;
+    unsigned int csound_frame_index;
+    unsigned int csound_frame_count;
+    unsigned int aeolus_frame_index;
+    unsigned int aeolus_frame_count;
     int init(CSOUND *csound)
     {
         log(csound, "Began aeolus_out...\n");
@@ -414,7 +409,6 @@ struct aeolus_out_t : public csound::OpcodeNoteoffBase<aeolus_out_t>
     int noteoff(CSOUND *csound)
     {
         int result = 0;
-        aeolus->terminate();
         log(csound, "Ended aeolus_out.\n");
         return result;
     }

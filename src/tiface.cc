@@ -22,13 +22,13 @@
 #include <ctype.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include "csound_iface.h"
+#include "tiface.h"
 
 
 
 extern "C" Iface *create_iface (int ac, char *av [])
 {
-    return new Csound_iface (ac, av);
+    return new Tiface (ac, av);
 }
 
 
@@ -53,7 +53,7 @@ void Reader::read (void)
 
 void Reader::thr_main (void)
 {
-    M_ifc_txtip  *M;
+    ///M_ifc_txtip  *M;
 
     using_history ();
     while (1)
@@ -67,9 +67,7 @@ void Reader::thr_main (void)
 }
 
 
-
-
-Csound_iface::Csound_iface (int ac, char *av []) :
+Tiface::Tiface (int ac, char *av []) :
     _reader (this, FM_TXTIP),
     _stop (false),
     _init (true),
@@ -82,17 +80,17 @@ Csound_iface::Csound_iface (int ac, char *av []) :
 }
 
 
-Csound_iface::~Csound_iface (void)
+Tiface::~Tiface (void)
 {
 }
 
 
-void Csound_iface::stop (void)
+void Tiface::stop (void)
 {
 }
 
 
-void Csound_iface::thr_main (void)
+void Tiface::thr_main (void)
 {
     set_time (0);
     inc_time (125000);
@@ -114,7 +112,7 @@ void Csound_iface::thr_main (void)
 }
 
 
-void Csound_iface::handle_mesg (ITC_mesg *M)
+void Tiface::handle_mesg (ITC_mesg *M)
 {
     switch (M->type ())
     {
@@ -172,27 +170,27 @@ void Csound_iface::handle_mesg (ITC_mesg *M)
 }
 
 
-void Csound_iface::handle_ifc_ready (void)
+void Tiface::handle_ifc_ready (void)
 {
     if (_init)
     {
-       printf ("Aeolus is ready.\n");
+        printf ("Aeolus is ready.\n");
          print_info ();
         _reader.thr_start (SCHED_OTHER, 0, 0x10000);
-	_reader.read ();
+        _reader.read ();
     }
     _init = false;
 }
 
 
-void Csound_iface::handle_ifc_init (M_ifc_init *M)
+void Tiface::handle_ifc_init (M_ifc_init *M)
 {
     if (_initdata) _initdata ->recover ();
     _initdata = M;
 }
 
 
-void Csound_iface::handle_ifc_mcset (M_ifc_chconf *M)
+void Tiface::handle_ifc_mcset (M_ifc_chconf *M)
 {
     if (_mididata) _mididata ->recover ();
     _mididata = M;
@@ -200,7 +198,7 @@ void Csound_iface::handle_ifc_mcset (M_ifc_chconf *M)
 }
 
 
-void Csound_iface::handle_ifc_retune (M_ifc_retune *M)
+void Tiface::handle_ifc_retune (M_ifc_retune *M)
 {
     printf ("Retuning Aeolus, A = %3.1lf Hz, %s (%s)\n",
 	    M->_freq,  
@@ -209,25 +207,25 @@ void Csound_iface::handle_ifc_retune (M_ifc_retune *M)
 }
 
 
-void Csound_iface::handle_ifc_grclr (M_ifc_ifelm *M)
+void Tiface::handle_ifc_grclr (M_ifc_ifelm *M)
 {
     _ifelms [M->_group] = 0;
 }
 
 
-void Csound_iface::handle_ifc_elclr (M_ifc_ifelm *M)
+void Tiface::handle_ifc_elclr (M_ifc_ifelm *M)
 {
     _ifelms [M->_group] &= ~(1 << M->_ifelm);
 }
 
 
-void Csound_iface::handle_ifc_elset (M_ifc_ifelm *M)
+void Tiface::handle_ifc_elset (M_ifc_ifelm *M)
 {
     _ifelms [M->_group] |= (1 << M->_ifelm);
 }
 
 
-void Csound_iface::handle_ifc_elatt (M_ifc_ifelm *M)
+void Tiface::handle_ifc_elatt (M_ifc_ifelm *M)
 {
     rewrite_label (_initdata->_groupd [M->_group]._ifelmd [M->_ifelm]._label);
     printf ("Retuning %7s %-1s (%s)\n",
@@ -237,7 +235,7 @@ void Csound_iface::handle_ifc_elatt (M_ifc_ifelm *M)
 }
 
 
-void Csound_iface::handle_ifc_txtip (M_ifc_txtip *M)
+void Tiface::handle_ifc_txtip (M_ifc_txtip *M)
 {
     if (M->_line == 0)
     {
@@ -249,7 +247,7 @@ void Csound_iface::handle_ifc_txtip (M_ifc_txtip *M)
 }
 
 
-void Csound_iface::print_info (void)
+void Tiface::print_info (void)
 {
     printf ("Application id:  %s\n", _initdata->_appid);
     printf ("Stops directory: %s\n", _initdata->_stops);
@@ -265,7 +263,7 @@ void Csound_iface::print_info (void)
 }
 
 
-void Csound_iface::print_keybdd (void)
+void Tiface::print_keybdd (void)
 {
     int i, b, k, n;
 
@@ -292,7 +290,7 @@ void Csound_iface::print_keybdd (void)
 }
 
 
-void Csound_iface::print_divisd (void)
+void Tiface::print_divisd (void)
 {
     int i, b, k, n;
 
@@ -319,7 +317,7 @@ void Csound_iface::print_divisd (void)
 }
 
 
-void Csound_iface::print_midimap (void)
+void Tiface::print_midimap (void)
 {
     int c, f, k, n;
 
@@ -345,7 +343,7 @@ void Csound_iface::print_midimap (void)
 }
 
 
-void Csound_iface::print_stops_short (int group)
+void Tiface::print_stops_short (int group)
 {
     int       i, n;
     uint32_t  m;
@@ -365,7 +363,7 @@ void Csound_iface::print_stops_short (int group)
 }
 
 
-void Csound_iface::print_stops_long (int group)
+void Tiface::print_stops_long (int group)
 {
     int       i, n;
     uint32_t  m;
@@ -384,7 +382,7 @@ void Csound_iface::print_stops_long (int group)
 }              
 
 
-void Csound_iface::rewrite_label (const char *p)
+void Tiface::rewrite_label (const char *p)
 {
     char *t;
 
@@ -399,7 +397,7 @@ void Csound_iface::rewrite_label (const char *p)
 }
 
 
-void Csound_iface::parse_command (const char *p)
+void Tiface::parse_command (const char *p)
 {
     int c1, c2;
 
@@ -435,7 +433,7 @@ void Csound_iface::parse_command (const char *p)
 }
 
 
-void Csound_iface::command_s (const char *p)
+void Tiface::command_s (const char *p)
 {
     int  g, i, k, n;
     char s [64];
@@ -491,7 +489,7 @@ void Csound_iface::command_s (const char *p)
 }
 
 
-int Csound_iface::find_group (const char *p)
+int Tiface::find_group (const char *p)
 {
     int g;
 
@@ -505,7 +503,7 @@ int Csound_iface::find_group (const char *p)
 }
 
 
-int Csound_iface::find_ifelm (const char *p, int g)
+int Tiface::find_ifelm (const char *p, int g)
 {
     int i, n;
 
@@ -518,7 +516,7 @@ int Csound_iface::find_ifelm (const char *p, int g)
 }
 
 
-int Csound_iface::comm1 (const char *p)
+int Tiface::comm1 (const char *p)
 {
     if (! strcmp (p, "?"))  return 0;
     if (! strcmp (p, "??")) return 1;
