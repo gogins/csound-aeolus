@@ -367,7 +367,16 @@ void CsoundAudio::init_csound(Lfq_u8 *qmidi, bool bform)
     for (int i = 0; i < _nplay; i++) _outbuf [i] = new float [_fsize];
     init_audio ();
 }
-
+/*
+       while (k >= _fsize)
+       	{
+            proc_synth (_fsize);
+            _alsa_handle->play_init (_fsize);
+            for (int i = 0; i < _nplay; i++) _alsa_handle->play_chan (i, _outbuf [i], _fsize);
+            _alsa_handle->play_done (_fsize);
+            k -= _fsize;
+	}
+*/
 int CsoundAudio::csound_callback (int &csound_frame_index, 
     int &csound_frame_count, 
     int &aeolus_frame_index, 
@@ -381,12 +390,12 @@ int CsoundAudio::csound_callback (int &csound_frame_index,
     // usually differ in size.
     for(csound_frame_index = 0; csound_frame_index < csound_frame_count; ++csound_frame_index, ++aeolus_frame_index) {
         // Recompute the Aeolus buffer whenever it has been consumed by Csound.
-        if (aeolus_frame_index >= aeolus_frame_count) {
+        if (aeolus_frame_index >= _fsize) {
             proc_queue (_qnote);
             proc_queue (_qcomm);
             proc_keys1 ();
             proc_keys2 ();
-            proc_synth (aeolus_frame_count);
+            proc_synth (_fsize);
             proc_mesg ();
             aeolus_frame_index = 0;
         }

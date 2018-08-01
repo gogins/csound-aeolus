@@ -35,9 +35,10 @@ message(STATUS "LIBRARY INSTALL DIR: ${LIBRARY_INSTALL_DIR}")
 message(STATUS "PLUGIN_INSTALL_DIR: ${PLUGIN_INSTALL_DIR}")
 add_library(csound_aeolus SHARED 
     src/csound_aeolus.cpp
-    src/csound_audio.cc
-    src/csound_iface.cc
-    src/csound_iface.h
+    src/audio.cc
+    src/audio.h
+    src/tiface.cc
+    src/tiface.h
     aeolus/source/addsynth.cc
     aeolus/source/addsynth.h
     aeolus/source/asection.cc

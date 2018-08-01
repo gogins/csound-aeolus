@@ -40,7 +40,7 @@ struct csound_aeolus_t
     Lfq_u32  note_queue  = Lfq_u32(256);
     Lfq_u32  comm_queue = Lfq_u32(256);
     Lfq_u8   midi_queue = Lfq_u8(1024);
-    Iface   *iface;
+    Csound_iface   *iface;
     ITC_ctrl       itcc;
     CsoundAudio   *audio;
     Imidi         *imidi;
@@ -49,7 +49,7 @@ struct csound_aeolus_t
     char           s [1024];
     char          *p;
     int            n;
-    bool initialized = false;
+    int waitseconds;
     csound_aeolus_t()
     {
     }
@@ -129,52 +129,28 @@ struct csound_aeolus_t
             }
         }
         csound->Message(csound, "csound_aeolus_t::initialize.\n");
-        initialized = true;
-    }
-    virtual void dispatch() {
-        csound->Message(csound, "aeolus_csound_t::dispatch...\n");
-        if (initialized == true) {
-            n = 4;
-            while (n)
-            {
-                itcc.get_event (1 << EV_EXIT);
-                {
-                    csound->Message(csound, "aeolus_csound_t::dispatch received EV_EXIT.\n");
-                    if (n-- == 4)
-                    {
-                        imidi->terminate ();
-                        model->terminate ();
-                        slave->terminate ();
-                        iface->terminate ();
-                    }
-                }
-            }
-        }
-        csound->Message(csound, "aeolus_csound_t::dispatch.\n");
     }
     virtual void terminate() {
         n = 0;
-        if (initialized == true) {
-            imidi->terminate ();
-            model->terminate ();
-            slave->terminate ();
-            iface->terminate ();
-        }
+        imidi->terminate ();
+        model->terminate ();
+        slave->terminate ();
+        iface->terminate ();
         delete audio;
         delete imidi;
         delete model;
         delete slave;
         delete iface;
     }
-    virtual void wait_for_iface()
+    virtual void wait_for_iface(int seconds)
     {
-         std::this_thread::sleep_for (std::chrono::seconds(20));
+         std::this_thread::sleep_for (std::chrono::seconds(seconds));
     }
 };
 
 static std::map<MYFLT, std::shared_ptr<csound_aeolus_t> > instances_for_ids;
 /**
- * i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory`
+ * i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds`
  */
 struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
 {
@@ -183,6 +159,7 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
     STRINGDAT *S_instruments_directory;
     STRINGDAT *S_waves_directory;
     MYFLT *i_bform;
+    MYFLT *i_wait_seconds;
     std::shared_ptr<csound_aeolus_t> aeolus;
     std::thread thread_;
     int init(CSOUND *csound)
@@ -191,13 +168,14 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
         aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
         instances_for_ids[*i_instance_id] = aeolus;
         log(csound, "aeolus_init: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
+        int wait_seconds = *i_wait_seconds;
         thread_ = std::thread(&csound_aeolus_t::initialize, aeolus.get(), 
             csound, 
             S_stops_directory->data, 
             S_instruments_directory->data, 
             S_waves_directory->data, 
             *i_bform);
-        aeolus->wait_for_iface();
+        aeolus->wait_for_iface(wait_seconds);
         log(csound, "aeolus_init.\n");
         return 0;
     }
@@ -446,14 +424,14 @@ extern "C"
 {
     OENTRY oentries[] =
     {
-        // i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform
+        // i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds
         {
             (char*)"aeolus_init",
             sizeof(aeolus_init_t),
             0,
             1,
             (char*)"i",
-            (char*)"SSSi",
+            (char*)"SSSii",
             (SUBR) aeolus_init_t::init_,
             0,
             0,
