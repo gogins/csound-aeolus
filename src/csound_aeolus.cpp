@@ -67,11 +67,14 @@ struct csound_aeolus_t
     char           s [1024];
     char          *p;
     int            n;
+    std::thread    thread;
     csound_aeolus_t()
     {
     }
     virtual ~csound_aeolus_t()
     {
+        csound->Message(csound, "csound_aeolus_t::~csound_aeolus_t.\n");
+        thread.join();
         delete audio;
         delete imidi;
         delete model;
@@ -163,14 +166,13 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
     MYFLT *i_bform;
     MYFLT *i_wait_seconds;
     std::shared_ptr<csound_aeolus_t> aeolus;
-    std::thread thread_;
     int init(CSOUND *csound)
     {
         *i_instance_id = instances_for_ids.size();
         aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
         instances_for_ids[*i_instance_id] = aeolus;
         log(csound, "aeolus_init: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
-        thread_ = std::thread(&csound_aeolus_t::run, aeolus.get(), 
+        aeolus->thread = std::thread(&csound_aeolus_t::run, aeolus.get(), 
             csound, 
             S_stops_directory->data, 
             S_instruments_directory->data, 
@@ -574,7 +576,14 @@ extern "C"
 
     PUBLIC int csoundModuleDestroy(CSOUND *csound)
     {
+        csound->Message(csound, "Aeolus: csoundModuleDestroy...\n");
+        for (auto it = instances_for_ids.begin(); it != instances_for_ids.end(); ++it) {
+            auto aeolus = it->second;
+            aeolus->iface->send_event (EV_EXIT, 1);
+            aeolus->thread.join();
+        }
         instances_for_ids.clear();
+        csound->Message(csound, "Aeolus: csoundModuleDestroy.\n");
         return 0;
     }
 
