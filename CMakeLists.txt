@@ -13,7 +13,7 @@ find_package(Csound)
 include_directories("${CSOUND_INCLUDE_DIR}")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 1)
@@ -157,6 +157,9 @@ install(FILES ${CMAKE_SOURCE_DIR}/doc/csound_aeolus.pdf
     DESTINATION share/doc/${CPACK_DEBIAN_PACKAGE_NAME})
 install(FILES "${CMAKE_SOURCE_DIR}/debian/changelog.gz"
     DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/examples"
+    DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
+
 #install(FILES ${CMAKE_SOURCE_DIR}/cmake/cpack/deb/lintian/overrides/csound-aeolus
 #    DESTINATION "share/lintian/overrides/"
 #    COMPONENT csound-aeolus)
