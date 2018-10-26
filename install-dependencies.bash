@@ -5,3 +5,4 @@ sudo apt-get install libclxclient-dev
 sudo apt-get install libjack-dev
 sudo apt-get install libreadline-dev
 sudo apt-get install libzita-alsa-pcmi-dev
+git submodule update --init --recursive
