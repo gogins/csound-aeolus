@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(csound-aeolus)
 set(APIVERSION "6.0")
 include(ExternalProject)
+include_directories(".")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
@@ -9,10 +10,14 @@ set(ALLOW_DUPLICATE_CUSTOM_TARGETS "Yes")
 add_definitions(-DUSE_DOUBLE)
 set(USE_DOUBLE "Yes")
 find_package(Csound)
+include_directories("${CSOUND_INCLUDE_DIR}")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 1)
+set(CPACK_PACKAGE_VERSION_PATCH 2)
 set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(BUILD_PLUGINS_DIR ${BUILD_DIR})
 set(BUILD_BIN_DIR ${BUILD_DIR})
@@ -69,22 +74,92 @@ add_library(csound_aeolus SHARED
     aeolus/source/slave.h
     )
 target_compile_definitions(csound_aeolus PUBLIC 
-    VERSION="0.1.0")
+    VERSION="0.1.2")
 target_include_directories(csound_aeolus PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/aeolus/source" 
-    "/usr/local/include/csound"
     ".")
 target_link_libraries(csound_aeolus PRIVATE ${CSOUNDLIB} asound clthreads pthread readline m dl)
 set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins64-${APIVERSION}")
 install(TARGETS csound_aeolus
     LIBRARY DESTINATION ${PLUGIN_INSTALL_DIR}
     ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR})
-set(SHARE_INSTALL_DIR "share/csound-aeolus")
+    
+# These are the real targets: the packages.
+
+# distro codename
+# find stuff we need
+find_program(LSB_RELEASE_CMD lsb_release)
+if(NOT DISTRO_CODENAME)
+  if(NOT LSB_RELEASE_CMD)
+    message(WARNING "DEB Generator: Can't find lsb_release in your path. Setting DISTRO_CODENAME to unknown.")
+    set(DISTRO_CODENAME unknown)
+  else()
+    execute_process(COMMAND ${LSB_RELEASE_CMD} -cs
+                    OUTPUT_VARIABLE DISTRO_CODENAME
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+endif()
+
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Michael Gogins <michael.gogins@gmail.com>")
+##set(CPACK_COMPONENTS_ALL csound-base csound-html5 csound-node csound-cmask)
+##set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE "OFF")
+set(CPACK_GENERATOR TGZ; DEB)
+set(CPACK_PACKAGE_CONTACT "${CPACK_DEBIAN_PACKAGE_MAINTAINER}")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_PACKAGE_NAME "csound-aeolus")
+set(CPACK_PACKAGE_VERSION "$ENV{CSOUND_EXTENDED_VERSION}")
+# set(CPACK_STRIP_FILES "YES")
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+
+set(CPACK_DEBIAN_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+set(CPACK_DEBIAN_COMPONENT_INSTALL "ON")   
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/DEBIAN/triggers")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Extends the sound programming language and library Csound.
+ Additional features include Csound opcodes for using the Aeolus software pipe organ 
+ by Fons Adriaensen.")
+set(CPACK_DEBIAN_PACKAGE_ENHANCES "csound, libsound64-dev, csound-python, csoundqt")
+set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS "ON")
+set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY ">=")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/gogins/csound-aeolus")
+set(CPACK_DEBIAN_PACKAGE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
+
+# generate a Debian compliant changelog
+string(TIMESTAMP RFC2822_TIMESTAMP "%a, %d %b %Y %H:%M:%S -0400" UTC)
+set(CHANGELOG_HEADER "csound-extended-dev (${CPACK_PACKAGE_VERSION}) ${DISTRO_CODENAME}\; urgency=high")
+# two spaces between maintainer and timestamp is NOT a mistake
+set(CHANGELOG_FOOTER " -- ${CPACK_DEBIAN_PACKAGE_MAINTAINER}  ${RFC2822_TIMESTAMP}")
+execute_process(COMMAND bash ${CMAKE_SOURCE_DIR}/git-changelog.sh
+    OUTPUT_VARIABLE CHANGELOG 
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+# message("CHANGELOG:\n${CHANGELOG}")
+string(REPLACE "\"" "" CHANGELOG ${CHANGELOG})
+#file(WRITE ${CMAKE_SOURCE_DIR}/debian/changelog.Debian ${CHANGELOG_HEADER}\n${CHANGELOG}\n\n${CHANGELOG_FOOTER})
+#execute_process(COMMAND gzip -f -9 -n ${CMAKE_SOURCE_DIR}/debian/changelog.Debian)
+file(WRITE ${CMAKE_SOURCE_DIR}/debian/changelog ${CHANGELOG_HEADER}\n${CHANGELOG}\n\n${CHANGELOG_FOOTER})
+execute_process(COMMAND gzip -f -9 -n ${CMAKE_SOURCE_DIR}/debian/changelog)
+unset(CHANGELOG_HEADER)
+unset(CHANGELOG_FOOTER)
+unset(RFC2822_TIMESTAMP)
+
 install(FILES "README.md"
     "LICENSE"
-    DESTINATION  ${SHARE_INSTALL_DIR})
-install(FILES "doc/csound_aeolus.pdf"
-    DESTINATION  ${SHARE_INSTALL_DIR})
+    DESTINATION  share/doc/${CPACK_DEBIAN_PACKAGE_NAME})
+install(FILES ${CMAKE_SOURCE_DIR}/LICENSE
+    DESTINATION share/doc/${CPACK_DEBIAN_PACKAGE_NAME}
+    RENAME copyright)
+install(FILES ${CMAKE_SOURCE_DIR}/doc/csound_aeolus.pdf
+    DESTINATION share/doc/${CPACK_DEBIAN_PACKAGE_NAME})
+install(FILES "${CMAKE_SOURCE_DIR}/debian/changelog.gz"
+    DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
+#install(FILES ${CMAKE_SOURCE_DIR}/cmake/cpack/deb/lintian/overrides/csound-aeolus
+#    DESTINATION "share/lintian/overrides/"
+#    COMPONENT csound-aeolus)
 
 include (CPack)
 

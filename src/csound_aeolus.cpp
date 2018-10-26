@@ -36,7 +36,7 @@
 #include "iface.h"
 #include "src/tiface.h"
 #include "src/audio.h"
-#include <OpcodeBase.hpp>
+#include <csound/OpcodeBase.hpp>
 
 struct csound_aeolus_t
 {

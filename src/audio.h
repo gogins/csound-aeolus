@@ -28,7 +28,7 @@
 #include "lfqueue.h"
 #include "reverb.h"
 #include "global.h"
-#include <csdl.h>
+#include <csound/csdl.h>
 
 class Audio : public A_thread
 {
