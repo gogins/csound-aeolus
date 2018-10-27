@@ -37,6 +37,11 @@ Csound repository, and in the license text of csound.h.
 I take this to mean I can build and run the Aeolus plugin with Csound, but the 
 plugin itself must be GPLv3. 
 
+# Installing
+
+On Linux, download the Debian package from this repository and install it in 
+the usual way, e.g. `sudo apt install ./csound-aeolus-1.0.0-Linux.deb`.
+
 # Building
 
 Install these Debian packages by running `bash install-dependencies.bash`:
