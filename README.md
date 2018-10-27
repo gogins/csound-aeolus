@@ -40,7 +40,8 @@ plugin itself must be GPLv3.
 # Installing
 
 On Linux, download the Debian package from this repository and install it in 
-the usual way, e.g. `sudo apt install ./csound-aeolus-1.0.0-Linux.deb`.
+the usual way, e.g. `sudo apt install ./csound-aeolus-1.0.0-Linux.deb`. A 
+set of organ stops are installed in `usr/share/csound-aeolus/stops-0.3.0`.
 
 # Building
 

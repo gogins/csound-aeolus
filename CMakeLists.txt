@@ -159,6 +159,9 @@ install(FILES "${CMAKE_SOURCE_DIR}/debian/changelog.gz"
     DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/examples"
     DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/stops-0.3.0"
+    DESTINATION "share/${CPACK_DEBIAN_PACKAGE_NAME}")
+
 
 #install(FILES ${CMAKE_SOURCE_DIR}/cmake/cpack/deb/lintian/overrides/csound-aeolus
 #    DESTINATION "share/lintian/overrides/"
