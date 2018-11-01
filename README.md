@@ -1,7 +1,7 @@
 # AEOLUS FOR CSOUND
 
-## Michael Gogins
-## http://michaelgogins.tumblr.com
+Michael Gogins
+http://michaelgogins.tumblr.com
 
 ## Introduction
 
