@@ -1,6 +1,9 @@
 # AEOLUS FOR CSOUND
+
 ## Michael Gogins
-## 1 August 2018
+## http://michaelgogins.tumblr.com
+
+## Introduction
 
 This project provides a set of Csound plugin opcodes encapsulating the 
 Aeolus software organ by Fons Adriaensen. I have always loved how this 
@@ -37,7 +40,7 @@ Csound repository, and in the license text of csound.h.
 I take this to mean I can build and run the Aeolus plugin with Csound, but the 
 plugin itself must be GPLv3. 
 
-# Installing
+# Installation
 
 On Linux, download the Debian package from this repository and install it in 
 the usual way, e.g. `sudo apt install ./csound-aeolus-1.0.0-Linux.deb`. A 
@@ -68,7 +71,7 @@ make
 sudo make install
 ```
 
-# Using
+# Usage
 
 Aeolus stops and instruments must defined using the Aeolus program. The Csound 
 opcodes can load stops, instruments, and presets, and select and modify stops 
