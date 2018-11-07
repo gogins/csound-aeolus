@@ -119,7 +119,8 @@ set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/DEBIAN/triggers")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Extends the sound programming language and library Csound.
  Additional features include Csound opcodes for using the Aeolus software pipe organ 
  by Fons Adriaensen.")
-set(CPACK_DEBIAN_PACKAGE_ENHANCES "csound, libsound64-dev, csound-python, csoundqt")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "aeolus, libcsound64-dev")
+set(CPACK_DEBIAN_PACKAGE_ENHANCES "csound, csound-python, csoundqt")
 set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS "ON")
 set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY ">=")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/gogins/csound-aeolus")
@@ -159,13 +160,6 @@ install(FILES "${CMAKE_SOURCE_DIR}/debian/changelog.gz"
     DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/examples"
     DESTINATION "share/doc/${CPACK_DEBIAN_PACKAGE_NAME}")
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/stops-0.3.0"
-    DESTINATION "share/${CPACK_DEBIAN_PACKAGE_NAME}")
-
-
-#install(FILES ${CMAKE_SOURCE_DIR}/cmake/cpack/deb/lintian/overrides/csound-aeolus
-#    DESTINATION "share/lintian/overrides/"
-#    COMPONENT csound-aeolus)
 
 include (CPack)
 
