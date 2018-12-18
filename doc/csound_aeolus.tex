@@ -66,13 +66,14 @@ Creates an instance of Aeolus for use by other opcodes. In theory, it is possibl
 
 \begin{description}
 	\item[Synopsis]
-	\item[]\lstinline|i_aeolus aeolus_init S_stops_directory, S_instruments_directory, S_waves_directory, i_bform, i_wait_seconds|
+	\item[]\lstinline|i_aeolus aeolus_init S_stops_directory, S_instrument_directory, S_waves_directory, i_bform, i_wait_seconds, o_presets_in_home|
 	\item[Parameters]
 	\item[]\lstinline|S_stops_directory| The complete pathname to the Aeolus stops directory, e.g. \lstinline|/home/mkg/stops-0.3.0|
-	\item[]\lstinline|S_instruments_directory| A directory containing an Aeolus instrument definition, typically a subdirectory of the stops directory.
+	\item[]\lstinline|S_instrument_directory| A directory containing an Aeolus instrument definition, typically a subdirectory of the stops directory.
 	\item[]\lstinline|S_waves_directory| A writable directory where Aeolus can write its wave tables, typically a subdirectory of the stops directory.
 	\item[]\lstinline|i_bform| If 1, Aeolus outputs audio in first-order Ambisonic B-format; if 0, Aeolus outputs audio in stereo.
 	\item[]\lstinline|i_wait_seconds| Aeolus starts up, loads presets, computes wave tables, etc. in separate threads. Playing notes before these have completed will cause problems. Use this parameter to specify a number of seconds, to be determined by trial and error, to wait before performing.
+	\item[]\lstinline|o_presets_in_home| If false (the default), the presets file, \lstinline|presets|, will be loaded from the instrument directory (e.g. \lstinline|stops-0.3.0/Aeolus/presets|); if true, the presets file, \lstinline|.aeolus-presets|, will be loaded from the user's home directory. 	
 	\item[Return Value]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus, which can be passed to other Aeolus opcodes.
 \end{description}
@@ -83,12 +84,11 @@ Specifies which of 32 banks of presents, and which of 32 presets in each bank, a
 
 \begin{description}
 	\item[Synopsis]
-	\item[]\lstinline|aeolus_preset i_aeolus, k_bank, k_preset, S_presets_directory|
+	\item[]\lstinline|aeolus_preset i_aeolus, k_bank, k_preset|
 	\item[Parameters]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
 	\item[]\lstinline|k_bank| The bank number, from 1 through 32.
 	\item[]\lstinline|k_preset| The preset number, from 1 through 32.
-	\item[]\lstinline|S_presets_directory| The directory containing the presets, typically \lstinline|~/.aeolus-presets|
 \end{description}
 
 \subsection*{aeolus\_midi}

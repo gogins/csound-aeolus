@@ -43,7 +43,7 @@ struct csound_aeolus_t
     CSOUND *csound;
     char  optline [1024];
     bool  t_opt = false;
-    bool  u_opt = false;
+    bool  u_opt = true;
     bool  A_opt = false;
     bool  B_opt = false;
     int   r_val = 48000;
@@ -81,7 +81,7 @@ struct csound_aeolus_t
         delete slave;
         delete iface;
     }
-    virtual void run(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform)
+    virtual void run(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform, bool u_opt_ = true)
     {
         csound = csound_;
         csound->Message(csound, "csound_aeolus_t::run...\n");
@@ -89,6 +89,7 @@ struct csound_aeolus_t
         csound->Message(csound, "csound_aeolus_t::instruments_directory: %s\n", instruments_directory);
         csound->Message(csound, "csound_aeolus_t::waves_directory:       %s\n", waves_directory);
         csound->Message(csound, "csound_aeolus_t::bform:                 %d\n", bform);
+        csound->Message(csound, "csound_aeolus_t::u_opt:                 %d\n", u_opt);
         p = getenv ("HOME");
         S_val = stops_directory;
         I_val = instruments_directory;
@@ -96,7 +97,7 @@ struct csound_aeolus_t
         r_val = csound->GetSr(csound);
         p_val = csound->GetKsmps(csound);
         n_val = csound->GetNchnls(csound);
-        u_opt = true;
+        u_opt = u_opt_;
         if (mlockall (MCL_CURRENT | MCL_FUTURE)) csound->Message(csound, "Warning: memory lock failed.\n");
         audio = new Audio (csound, &note_queue, &comm_queue);
         audio->init_csound(&midi_queue, bform);
@@ -165,6 +166,8 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
     STRINGDAT *S_waves_directory;
     MYFLT *i_bform;
     MYFLT *i_wait_seconds;
+    MYFLT *o_presets_in_home;
+    bool b_uhome;
     std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
@@ -172,12 +175,14 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
         aeolus = std::shared_ptr<csound_aeolus_t>(new csound_aeolus_t);
         instances_for_ids[*i_instance_id] = aeolus;
         log(csound, "aeolus_init: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
+        b_uhome = (bool) *o_presets_in_home;
         aeolus->thread = std::thread(&csound_aeolus_t::run, aeolus.get(), 
             csound, 
             S_stops_directory->data, 
             S_instruments_directory->data, 
             S_waves_directory->data, 
-            *i_bform);
+            *i_bform,
+            b_uhome);
         int wait_seconds = *i_wait_seconds;
         std::this_thread::sleep_for (std::chrono::seconds(wait_seconds));        
         log(csound, "aeolus_init.\n");
@@ -186,7 +191,7 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
 };
 
 /**
- * aeolus_preset i_aeolus, k_bank, k_preset, S_presets_directory
+ * aeolus_preset i_aeolus, k_bank, k_preset
  */
 struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
 {
@@ -204,7 +209,6 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
         log(csound, "aeolus_preset: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
         k_bank_prior = -1;
         k_preset_prior = -1;
-        aeolus->d_val = S_presets_directory->data;
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -216,12 +220,12 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
             MYFLT channel = 0;
             MYFLT controller_number = 98;
             MYFLT zero = 0;
-            log(csound, "aeolus_preset: bank %f  preset %f in %s...\n", k_bank_prior, k_preset_prior, S_presets_directory->data);
+            log(csound, "aeolus_preset old: bank %7.2f  preset %7.2f...\n", k_bank_prior, k_preset_prior);
             aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_bank);
             aeolus->audio->csound_midi(&program_change, &channel, k_preset, &zero);
             k_bank_prior = *k_bank;
             k_preset_prior = *k_preset;
-            log(csound, "aeolus_preset: bank %f  preset %f.\n", k_bank_prior, k_preset_prior);
+            log(csound, "aeolus_preset new: bank %7.2f  preset %7.2f.\n", k_bank_prior, k_preset_prior);
         }
         return result;
     }
@@ -445,26 +449,26 @@ extern "C"
 {
     OENTRY oentries[] =
     {
-        // i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds
+        // i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds, o_presets_in_home
         {
             (char*)"aeolus_init",
             sizeof(aeolus_init_t),
             0,
             1,
             (char*)"i",
-            (char*)"SSSii",
+            (char*)"SSSiio",
             (SUBR) aeolus_init_t::init_,
             0,
             0,
         },
-        // aeolus_preset i_aeolus, k_bank, k_preset, S_presets_directory
+        // aeolus_preset i_aeolus, k_bank, k_preset
         {
             (char*)"aeolus_preset",
             sizeof(aeolus_preset_t),
             0,
             3,
             (char*)"",
-            (char*)"ikkS",
+            (char*)"ikk",
             (SUBR) aeolus_preset_t::init_,
             (SUBR) aeolus_preset_t::kontrol_,
             0,
