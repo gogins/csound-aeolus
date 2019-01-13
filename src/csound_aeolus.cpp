@@ -198,7 +198,6 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
     MYFLT *i_instance_id;
     MYFLT *k_bank;
     MYFLT *k_preset;
-    STRINGDAT *S_presets_directory;
     std::shared_ptr<csound_aeolus_t> aeolus;
     MYFLT k_bank_prior;
     MYFLT k_preset_prior;
@@ -206,9 +205,18 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
     {
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
-        log(csound, "aeolus_preset: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
-        k_bank_prior = -1;
-        k_preset_prior = -1;
+        //log(csound, "aeolus_preset: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
+        MYFLT controller = 0xB0;
+        MYFLT program_change = 0xC0;
+        MYFLT channel = 0;
+        MYFLT controller_number = 98; 
+        MYFLT zero = 0;
+        aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_bank);
+        aeolus->audio->csound_midi(&program_change, &channel, k_preset, &zero);
+        //aeolus->iface->send_event(TO_MODEL, new M_ifc_preset (MT_IFC_PRRCL, int(*k_bank), int(*k_preset), 0, 0));
+        //log(csound, "aeolus_preset init: bank %7.2f  preset %7.2f.\n", *k_bank, *k_preset);
+        k_bank_prior = *k_bank;
+        k_preset_prior = *k_preset;
         return result;
     }
     int kontrol(CSOUND *csound)
@@ -218,14 +226,15 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
             MYFLT controller = 0xB0;
             MYFLT program_change = 0xC0;
             MYFLT channel = 0;
-            MYFLT controller_number = 98;
+            MYFLT controller_number = 98; 
             MYFLT zero = 0;
-            log(csound, "aeolus_preset old: bank %7.2f  preset %7.2f...\n", k_bank_prior, k_preset_prior);
+            //log(csound, "aeolus_preset was:  bank %7.2f  preset %7.2f...\n", k_bank_prior, k_preset_prior);
             aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_bank);
             aeolus->audio->csound_midi(&program_change, &channel, k_preset, &zero);
+            //aeolus->iface->send_event(TO_MODEL, new M_ifc_preset (MT_IFC_PRRCL, int(*k_bank), int(*k_preset), 0, 0));
+            //log(csound, "aeolus_preset now:  bank %7.2f  preset %7.2f.\n", *k_bank, *k_preset);
             k_bank_prior = *k_bank;
             k_preset_prior = *k_preset;
-            log(csound, "aeolus_preset new: bank %7.2f  preset %7.2f.\n", k_bank_prior, k_preset_prior);
         }
         return result;
     }
@@ -402,7 +411,6 @@ struct aeolus_command_t : public csound::OpcodeBase<aeolus_command_t>
     {
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
-        MYFLT note_on = 0x90;
         aeolus->iface->parse_command(S_command->data);
         return result;
     }

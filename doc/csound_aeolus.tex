@@ -73,7 +73,7 @@ Creates an instance of Aeolus for use by other opcodes. In theory, it is possibl
 	\item[]\lstinline|S_waves_directory| A writable directory where Aeolus can write its wave tables, typically a subdirectory of the stops directory.
 	\item[]\lstinline|i_bform| If 1, Aeolus outputs audio in first-order Ambisonic B-format; if 0, Aeolus outputs audio in stereo.
 	\item[]\lstinline|i_wait_seconds| Aeolus starts up, loads presets, computes wave tables, etc. in separate threads. Playing notes before these have completed will cause problems. Use this parameter to specify a number of seconds, to be determined by trial and error, to wait before performing.
-	\item[]\lstinline|o_presets_in_home| If false (the default), the presets file, \lstinline|presets|, will be loaded from the instrument directory (e.g. \lstinline|stops-0.3.0/Aeolus/presets|); if true, the presets file, \lstinline|.aeolus-presets|, will be loaded from the user's home directory. 	
+	\item[]\lstinline|o_presets_in_home| If false (the default), the presets file, \lstinline|presets|, will be loaded from the instrument directory (e.g. \lstinline|stops-0.3.0/Aeolus/presets|); if true, the presets file, \lstinline|.aeolus-presets|, will be loaded from the user's home directory. \textit{\textbf{Note}}: The Aeolus \emph{program} only loads and saves presets from the home directory, so if you want to load them from the instrument directory, you must copy the \lstinline|~/.aeolus-presets| file to a file named \lstinline|presets| in the instrument directory.
 	\item[Return Value]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus, which can be passed to other Aeolus opcodes.
 \end{description}
@@ -126,7 +126,6 @@ Invoke a stop according to the mode of operation previously specified for its gr
 \begin{description}
 	\item[Synopsis]
 	\item[]\lstinline|aeolus_stop i_aeolus, k_stop_button|
-	\item[]\lstinline|aeolus_group_mode i_aeolus, k_group, k_mode|
 	\item[Parameters]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
 	\item[]\lstinline|k_stop_button| The number of the stop button. Stops are numbered from 0 at the top left of the user interface on up to the bottom right of the interface.
@@ -196,7 +195,7 @@ endin
 
 \begin{lstlisting}
 instr 2 
-aeolus_preset gi_aeolus, 1, 1, "~/.aeolus-presets"
+aeolus_preset gi_aeolus, 0, 0
 a_out[] init 2
 a_out aeolus_out gi_aeolus
 out a_out
