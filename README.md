@@ -1,6 +1,6 @@
 # csound-aeolus
 
-[![Github All Releases](https://img.shields.io/github/downloads/gogins/csound-aeolus/latest/total.svg)]()
+[![Github All Releases (total)](https://img.shields.io/github/downloads/gogins/csound-aeolus/total.svg)]()
 
 
 Michael Gogins<br>
