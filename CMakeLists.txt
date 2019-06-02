@@ -17,7 +17,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 set(CPACK_PACKAGE_VERSION_MAJOR 2)
 set(CPACK_PACKAGE_VERSION_MINOR 1)
-set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_VERSION_PATCH 1)
 set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(BUILD_PLUGINS_DIR ${BUILD_DIR})
 set(BUILD_BIN_DIR ${BUILD_DIR})
@@ -74,7 +74,7 @@ add_library(csound_aeolus SHARED
     aeolus/source/slave.h
     )
 target_compile_definitions(csound_aeolus PUBLIC 
-    VERSION="1.1.0")
+    VERSION="1.1.1")
 target_include_directories(csound_aeolus PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/aeolus/source" 
     ".")
