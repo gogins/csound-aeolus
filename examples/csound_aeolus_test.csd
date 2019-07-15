@@ -3,7 +3,7 @@
 ; Credits: Adapted by Michael Gogins 
 ; from code by David Horowitz and Lian Cheung. 
 ; the Aeolus GUI to dispatch events and display properly.
--m3 --displays -odac
+-m195 --displays -odac
 </CsOptions>
 <CsInstruments>
 sr = 48000
@@ -21,7 +21,7 @@ endin
 
 ; Send audio from the Aeolus to the output.
 instr aeolus_output 
-aeolus_preset gi_aeolus, 0, 0, "~/.aeolus-presets"
+;aeolus_preset gi_aeolus, 0, 0 ;;, "~/.aeolus-presets"
 a_out[] init 2
 a_out aeolus_out gi_aeolus
 out a_out

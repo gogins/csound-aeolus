@@ -497,6 +497,8 @@ void Audio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *veloc
                     _qmidi->write_commit (3);
                 }
             }
+            break;
+            
         case MIDICTL_SWELL:
         case MIDICTL_TFREQ:
         case MIDICTL_TMODD:

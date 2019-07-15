@@ -81,15 +81,10 @@ struct csound_aeolus_t
         delete slave;
         delete iface;
     }
-    virtual void run(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform, bool u_opt_ = true)
+    virtual void run(CSOUND *csound_, const char *stops_directory, const char *instruments_directory, const char *waves_directory, bool bform, bool u_opt_)
     {
         csound = csound_;
         csound->Message(csound, "csound_aeolus_t::run...\n");
-        csound->Message(csound, "csound_aeolus_t::stops_directory:       %s\n", stops_directory);
-        csound->Message(csound, "csound_aeolus_t::instruments_directory: %s\n", instruments_directory);
-        csound->Message(csound, "csound_aeolus_t::waves_directory:       %s\n", waves_directory);
-        csound->Message(csound, "csound_aeolus_t::bform:                 %d\n", bform);
-        csound->Message(csound, "csound_aeolus_t::u_opt:                 %d\n", u_opt);
         p = getenv ("HOME");
         S_val = stops_directory;
         I_val = instruments_directory;
@@ -98,6 +93,11 @@ struct csound_aeolus_t
         p_val = csound->GetKsmps(csound);
         n_val = csound->GetNchnls(csound);
         u_opt = u_opt_;
+        csound->Message(csound, "csound_aeolus_t::stops_directory:       %s\n", S_val);
+        csound->Message(csound, "csound_aeolus_t::instruments_directory: %s\n", I_val);
+        csound->Message(csound, "csound_aeolus_t::waves_directory:       %s\n", W_val);
+        csound->Message(csound, "csound_aeolus_t::bform:                 %d\n", bform);
+        csound->Message(csound, "csound_aeolus_t::u_opt:                 %d\n", u_opt);
         if (mlockall (MCL_CURRENT | MCL_FUTURE)) csound->Message(csound, "Warning: memory lock failed.\n");
         audio = new Audio (csound, &note_queue, &comm_queue);
         audio->init_csound(&midi_queue, bform);
@@ -156,7 +156,7 @@ struct csound_aeolus_t
 static std::map<MYFLT, std::shared_ptr<csound_aeolus_t> > instances_for_ids;
 
 /**
- * i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds`
+ * i_aeolus aeolus_init S_stops_directory, S_instruments_directory,_S_waves_directory, i_bform, i_wait_seconds, o_presets_in_home`
  */
 struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
 {
@@ -357,12 +357,14 @@ struct aeolus_stop_t : public csound::OpcodeBase<aeolus_stop_t>
     {
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
+        k_stop_prior = -1;
         return result;
     }
     int kontrol(CSOUND *csound)
     {
         int result = 0;
         if (*k_stop != k_stop_prior) {
+            k_stop_prior = *k_stop;
             MYFLT controller = 0xB0;
             MYFLT channel = 0;
             MYFLT controller_number = 98;

@@ -22,7 +22,7 @@ pdfpagelabels,
 pdfstartpage=2
 ]{hyperref}
 \pagestyle{scrheadings}
-\definecolor{LstColor}{cmyk}{0.1,0.1,0,0.025} 
+\definecolor{LstColor}{cmyk}{0.1,0.1,0,0.025}
 \usepackage[
 backend=biber,
 style=numeric,
@@ -36,7 +36,7 @@ backref=true
 \author{Michael Gogins}
 \begin{document}
 \lstset{basicstyle=\ttfamily,commentstyle=\ttfamily\tiny,tabsize=2,breaklines,fontadjust=true,keepspaces=false,fancyvrb=true,showstringspaces=false,moredelim=[is][\textbf]{\\emph\{}{\}}}
-	
+
 \maketitle
 
 \begin{abstract}
@@ -45,25 +45,47 @@ backref=true
 
 \section{Introduction}
 
-The Aeolus software organ (\url{https://kokkinizita.linuxaudio.org/linuxaudio/aeolus}) by Fons Adriaensen (\url{https://kokkinizita.linuxaudio.org}) provides a high-quality software emulation of a traditional pipe organ on Linux and OSX. Aeolus is particulary wonderful because it enables users to create their own organs, using an ordinary text editor. The program is available as a Debian package (\url{https://packages.debian.org/search?keywords=aeolus}).
+The Aeolus software organ
+(\url{https://kokkinizita.linuxaudio.org/linuxaudio/aeolus}) by Fons Adriaensen
+(\url{https://kokkinizita.linuxaudio.org}) provides a high-quality software
+emulation of a traditional pipe organ on Linux and OSX. Aeolus is particulary
+wonderful because it enables users to create their own organs, using an ordinary
+text editor. The program is available as a Debian package
+(\url{https://packages.debian.org/search?keywords=aeolus}).
 
-The Aeolus program runs both as an X Windows program, and as a text-mode program. Aeolus can use either Jack or ALSA for audio and MIDI connections.
+The Aeolus program runs both as an X Windows program, and as a text-mode
+program. Aeolus can use either Jack or ALSA for audio and MIDI connections.
 
-Csound (\url{https://csound.com/}) is, of course, one of the oldest and most powerful user-programmable software synthesizers. These opcodes bring all the functionality of Aeolus into Csound as a set of plugin opcodes. Although of course Aeolus already can be used with Csound by means of the Jack audio connection kit (\url{http://jackaudio.org}) and Csound's Jacko opcodes ({\url{https://csound.com/docs/manual/indexframes.html}), using these Aeolus opcodes is \textit{considerably} simpler and easier. 
+Csound (\url{https://csound.com/}) is, of course, one of the oldest and most
+powerful user-programmable software synthesizers. These opcodes bring all the
+functionality of Aeolus into Csound as a set of plugin opcodes. Although of
+course Aeolus already can be used with Csound by means of the Jack audio
+connection kit (\url{http://jackaudio.org}) and Csound's Jacko opcodes
+({\url{https://csound.com/docs/manual/indexframes.html}), using these Aeolus
+opcodes is \textit{considerably} simpler.
 
-Basically, you run the Aeolus program to define and save presets. Then, in your Csound orchestra, you create an instance of Aeolus, load stops and an instrument, and select a preset. Csound will then play the instrument according to the MIDI configuration saved in the preset.
+Basically, you run the Aeolus program to define and save presets. Then, in your
+Csound orchestra, you create an instance of Aeolus, load stops and an
+instrument, and select a preset. Csound will then play the instrument according
+to the MIDI configuration saved in the preset.
 
-A simple example of this can be found in the \url{examples/aeolus-example.csd} file.
+A simple example of this can be found in the \url{examples/aeolus-example.csd}
+file.
 
-For more information on how to use Aeolus, see \url{http://www.muse-sequencer.org/index.php/Aeolus}.
+For more information on how to use Aeolus, see
+\url{http://www.muse-sequencer.org/index.php/Aeolus}.
 
-For some examples of music recorded using Aeolus, see \url{https://kokkinizita.linuxaudio.org/linuxaudio/aeolus/index.html}.
+For some examples of music recorded using Aeolus, see
+\url{https://kokkinizita.linuxaudio.org/linuxaudio/aeolus/index.html}.
 
 \section{Reference}
 
 \subsection*{aeolus\_init}
 
-Creates an instance of Aeolus for use by other opcodes. In theory, it is possible to run any number of instances of Aeolus in one Csound orchestra. This should be done in the orchestra header, before other instruments using Aeolus opcodes are defined.
+Creates an instance of Aeolus for use by other opcodes. In theory, it is
+possible to run any number of instances of Aeolus in one Csound orchestra. This
+should be done in the orchestra header, before other instruments using Aeolus
+opcodes are defined.
 
 \begin{description}
 	\item[Synopsis]
@@ -74,7 +96,7 @@ Creates an instance of Aeolus for use by other opcodes. In theory, it is possibl
 	\item[]\lstinline|S_waves_directory| A writable directory where Aeolus can write its wave tables, typically a subdirectory of the stops directory.
 	\item[]\lstinline|i_bform| If 1, Aeolus outputs audio in first-order Ambisonic B-format; if 0, Aeolus outputs audio in stereo.
 	\item[]\lstinline|i_wait_seconds| Aeolus starts up, loads presets, computes wave tables, etc. in separate threads. Playing notes before these have completed will cause problems. Use this parameter to specify a number of seconds, to be determined by trial and error, to wait before performing.
-	\item[]\lstinline|o_presets_in_home| If false (the default), the presets file, \lstinline|presets|, will be loaded from the instrument directory (e.g. \lstinline|stops-0.3.0/Aeolus/presets|); if true, the presets file, \lstinline|.aeolus-presets|, will be loaded from the user's home directory. \textit{\textbf{Note}}: The Aeolus \emph{program} only loads and saves presets from the home directory, so if you want to load them from the instrument directory, you must copy the \lstinline|~/.aeolus-presets| file to a file named \lstinline|presets| in the instrument directory.
+	\item[]\lstinline|o_presets_in_home| If false (the default), the presets file, \lstinline|presets|, will be loaded from the instrument directory (e.g. \lstinline|stops-0.3.0/Aeolus/presets|); if true, the presets file, \lstinline|.aeolus-presets|, will be loaded from the user's home directory. \textit{\textbf{Note}}: To prevent the Aeolus \emph{program} from loading and saving presets from the home directory, and to enable loading and saving presets from the instrument directory, create an \lstinline|.aeolusrc| file, which may be empty, in your home directory.
 	\item[Return Value]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus, which can be passed to other Aeolus opcodes.
 \end{description}
@@ -134,7 +156,7 @@ Invoke a stop according to the mode of operation previously specified for its gr
 
 \subsection*{aeolus\_note}
 
-Sends a note to Aeolus on the specified MIDI channel. Note that a 12 tone scale is assumed, that pressing a key twice before a note is over does nothing, and that the MIDI velocity does nothing, just as on a real organ. 
+Sends a note to Aeolus on the specified MIDI channel. Note that a 12 tone scale is assumed, that pressing a key twice before a note is over does nothing, and that the MIDI velocity does nothing, just as on a real organ.
 
 \begin{description}
 	\item[Synopsis]
@@ -173,9 +195,21 @@ Outputs all audio synthesized for each note of an Aeolus instance. This opcode s
 
 \section{User Guide}
 
-Before using these opcodes, you should install the regular Aeolus program including stops, configure it, test it, and define some presets that you will use in Csound.
+Before using these opcodes, you should install the regular Aeolus program including stops. \emph{Nota bene}, Aeolus can be quirky to set up. My recommendations are:
+\begin{enumerate}
+	\item Create an empty \lstinline|.aeolusrc| file in your home directory.
+	\item Copy the entire \lstinline|stops-0.3.0| tree to your project directory, so that stops and presets can be saved that are specific to your project.
+	\item Run the Aeolus program using the ALSA driver (not Jack) and referencing your project stops, e.g.\ \lstinline|aeolus -S stops-0.3.0 -I Aeolus -A -d hw:2,0|.
+	\item Configure the presets you need with the stops that you need. Be sure to save each preset and then save the instrument definition.
+	\item Before existing the Aeolus program, use the Instrument dialog, Retune button to generate the waveform files for your organ.
+	\item When you run Csound, do \emph{not} use the \lstinline|o_presets_in_home| option, so that the Aeolus opcodes will read presets from your project directory.
+\end{enumerate}
 
-Install the \lstinline|libcsound_aeolus.so| plugin in your Csound plugins directory, e.g. \lstinline|/usr/local/lib/csound/plugins64-6.0|.
+You will probably not get any sound unless Aeolus prints that it has saved a
+definition and some presets!
+
+Install the \lstinline|libcsound_aeolus.so| plugin in your Csound plugins
+directory, e.g. \lstinline|/usr/local/lib/csound/plugins64-6.0|.
 
 In the header of your Csound orchestra, instantiate Aeolus as a global variable as follows:
 
@@ -186,16 +220,19 @@ gi_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0, 5
 \noindent In the orchestra, define an instrument that will send notes from the Csound score to Aeolus:
 
 \begin{lstlisting}
-instr 1 
+instr 1
 imidichannel init 1
 aeolus_note gi_aeolus, imidichannel, p4, p5
 endin
 \end{lstlisting}
 
-\noindent Also define an always-on instrument that will route the audio output from Aeolus either to the output soundfile (as shown) or to further processing in Csound. In this instrument, you should also set up your presets, stops, or other configuration:
+\noindent Also define an always-on instrument that will route the audio output
+from Aeolus either to the output soundfile (as shown) or to further processing
+in Csound. In this instrument, you should also set up your presets, stops, or
+other configuration:
 
 \begin{lstlisting}
-instr 2 
+instr 2
 aeolus_preset gi_aeolus, 0, 0
 a_out[] init 2
 a_out aeolus_out gi_aeolus
@@ -210,19 +247,8 @@ i 2 0 -1
 ; Send a C major 7th arpeggio to the Aeolus.
 i 1 1 10 60 76
 i 1 2 10 64 73
-i 1 3 10 67 70 
+i 1 3 10 67 70
 i 1 4 10 71 67
 \end{lstlisting}
 
-
-
-
-
-
-
-
-
-
-
-\end{document}          
-
+\end{document}
