@@ -21,7 +21,7 @@ endin
 
 ; Send audio from the Aeolus to the output.
 instr aeolus_output 
-;aeolus_preset gi_aeolus, 0, 0 ;;, "~/.aeolus-presets"
+aeolus_preset gi_aeolus, 0, 0 
 a_out[] init 2
 a_out aeolus_out gi_aeolus
 out a_out

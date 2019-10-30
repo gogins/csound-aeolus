@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //
 //  Copyright (C) 2018 by Michael Gogins <michael.gogins@gmail.com>
-//    
+//
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation; either version 3 of the License, or
@@ -18,6 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #include <math.h>
+#include <cstdio>
 #include "src/audio.h"
 #include "messages.h"
 
@@ -112,7 +113,7 @@ void Audio::init_csound(Lfq_u8 *qmidi, bool bform)
 
     _fsamp = csound->GetSr(csound);
     _fsize = csound->GetKsmps(csound);
-    if (_fsize < PERIOD || 
+    if (_fsize < PERIOD ||
         ((_fsize % PERIOD) != 0)) {
         csound->Die(csound, "Aeolus error: Csound ksmps must be an integer multiple of 64.\n");
     }
@@ -368,16 +369,16 @@ void Audio::proc_mesg (void)
     }
 }
 
-int Audio::csound_callback (unsigned int &csound_frame_index, 
-    unsigned int &csound_frame_count, 
-    unsigned int &aeolus_frame_index, 
-    unsigned int &aeolus_frame_count, 
+int Audio::csound_callback (unsigned int &csound_frame_index,
+    unsigned int &csound_frame_count,
+    unsigned int &aeolus_frame_index,
+    unsigned int &aeolus_frame_count,
     ARRAYDAT *csound_output)
 {
     // Copy audio from the Aeolus output buffer to the opcode output buffer.
     // The opcode output buffer is a 1-dimensional array of nchnls channels,
-    // and each channel is an a-rate variable, which is actually itself a 
-    // vector of ksmps elements. The Aeolus buffer and the opcode buffer 
+    // and each channel is an a-rate variable, which is actually itself a
+    // vector of ksmps elements. The Aeolus buffer and the opcode buffer
     // usually differ in size.
     for(csound_frame_index = 0; csound_frame_index < csound_frame_count; ++csound_frame_index, ++aeolus_frame_index) {
         // Recompute the Aeolus buffer whenever it has been consumed by Csound.
@@ -487,10 +488,12 @@ void Audio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *veloc
         case MIDICTL_IFELM:
             // Program bank selection or stop control, sent
             // to model thread if on control-enabled channel.
+            ///std::fprintf(stderr, "Audio::csound_midi: f: %4d t: %4d n: %4d v: %4d\n", f, t, n, v);
             if (f & 4)
             {
                 if (_qmidi->write_avail () >= 3)
                 {
+                    ///std::fprintf(stderr, "Sending...\n");
                     _qmidi->write (0, t);
                     _qmidi->write (1, n);
                     _qmidi->write (2, v);
@@ -498,7 +501,7 @@ void Audio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *veloc
                 }
             }
             break;
-            
+
         case MIDICTL_SWELL:
         case MIDICTL_TFREQ:
         case MIDICTL_TMODD:
@@ -534,8 +537,3 @@ void Audio::csound_midi (MYFLT *status, MYFLT *channel, MYFLT *key, MYFLT *veloc
         break;
     }
 }
-
-
-
-
-

@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //
 //  Copyright (C) 2018 by Michael Gogins <michael.gogins@gmail.com>
-//    
+//
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation; either version 3 of the License, or
@@ -176,15 +176,15 @@ struct aeolus_init_t : public csound::OpcodeBase<aeolus_init_t>
         instances_for_ids[*i_instance_id] = aeolus;
         log(csound, "aeolus_init: instance_id: %f aeolus: %p...\n", *i_instance_id, aeolus.get());
         b_uhome = (bool) *o_presets_in_home;
-        aeolus->thread = std::thread(&csound_aeolus_t::run, aeolus.get(), 
-            csound, 
-            S_stops_directory->data, 
-            S_instruments_directory->data, 
-            S_waves_directory->data, 
+        aeolus->thread = std::thread(&csound_aeolus_t::run, aeolus.get(),
+            csound,
+            S_stops_directory->data,
+            S_instruments_directory->data,
+            S_waves_directory->data,
             *i_bform,
             b_uhome);
         int wait_seconds = *i_wait_seconds;
-        std::this_thread::sleep_for (std::chrono::seconds(wait_seconds));        
+        std::this_thread::sleep_for (std::chrono::seconds(wait_seconds));
         log(csound, "aeolus_init.\n");
         return 0;
     }
@@ -209,7 +209,7 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
         MYFLT controller = 0xB0;
         MYFLT program_change = 0xC0;
         MYFLT channel = 0;
-        MYFLT controller_number = 98; 
+        MYFLT controller_number = 98;
         MYFLT zero = 0;
         aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_bank);
         aeolus->audio->csound_midi(&program_change, &channel, k_preset, &zero);
@@ -226,7 +226,7 @@ struct aeolus_preset_t : public csound::OpcodeBase<aeolus_preset_t>
             MYFLT controller = 0xB0;
             MYFLT program_change = 0xC0;
             MYFLT channel = 0;
-            MYFLT controller_number = 98; 
+            MYFLT controller_number = 98;
             MYFLT zero = 0;
             //log(csound, "aeolus_preset was:  bank %7.2f  preset %7.2f...\n", k_bank_prior, k_preset_prior);
             aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_bank);
@@ -277,7 +277,7 @@ struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
 };
 
 /**
- * aeolus_group_mode i_aeolus, k_group, k_mode
+ * aeolus_group_mode i_aeolus, i_group, i_mode
 
   v = 01mm0ggg
 
@@ -303,38 +303,27 @@ struct aeolus_midi_t : public csound::OpcodeBase<aeolus_midi_t>
 struct aeolus_group_mode_t : public csound::OpcodeBase<aeolus_group_mode_t>
 {
     MYFLT *i_instance_id;
-    MYFLT *k_group;
-    MYFLT *k_mode;
-    MYFLT k_group_prior;
-    MYFLT k_mode_prior;
+    MYFLT *i_group;
+    MYFLT *i_mode;
     std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
-        return result;
-    }
-    int kontrol(CSOUND *csound)
-    {
-        int result = 0;
-        if (*k_group != k_group_prior || *k_mode != k_mode_prior) {
-            MYFLT controller = 0xB0;
-            MYFLT channel = 0;
-            MYFLT controller_number = 98;
-            int mode = (int) *k_mode;
-            int group = (int) *k_group;
-            int value_ = 0b01000000 + (mode << 4) + group;
-            MYFLT value = value_;
-            aeolus->audio->csound_midi(&controller, &channel, &controller_number, &value);
-            k_mode_prior = *k_mode;
-            k_group_prior = *k_group;
-        }
+        MYFLT controller = 0xB0;
+        MYFLT channel = 0;
+        MYFLT controller_number = 98;
+        int mode = (int) *i_mode;
+        int group = (int) *i_group;
+        int value_ = 0b01000000 + (mode << 4) + group;
+        MYFLT value = value_;
+        aeolus->audio->csound_midi(&controller, &channel, &controller_number, &value);
         return result;
     }
 };
 
 /**
- * aeolus_stop i_aeolus, k_stop_button
+ * aeolus_stop i_aeolus, i_stop_button
 
   v = 000bbbbb
 
@@ -350,26 +339,17 @@ struct aeolus_group_mode_t : public csound::OpcodeBase<aeolus_group_mode_t>
 struct aeolus_stop_t : public csound::OpcodeBase<aeolus_stop_t>
 {
     MYFLT *i_instance_id;
-    MYFLT *k_stop;
-    MYFLT k_stop_prior;
+    MYFLT *i_stop;
     std::shared_ptr<csound_aeolus_t> aeolus;
     int init(CSOUND *csound)
     {
         int result = 0;
         aeolus = instances_for_ids[*i_instance_id];
-        k_stop_prior = -1;
-        return result;
-    }
-    int kontrol(CSOUND *csound)
-    {
-        int result = 0;
-        if (*k_stop != k_stop_prior) {
-            k_stop_prior = *k_stop;
-            MYFLT controller = 0xB0;
-            MYFLT channel = 0;
-            MYFLT controller_number = 98;
-            aeolus->audio->csound_midi(&controller, &channel, &controller_number, k_stop);
-        }
+        MYFLT status = 0xB0;
+        MYFLT channel = 0;
+        MYFLT controller = 98;
+        ///std::fprintf(stderr, "aeolus_stop_t::init: status: %9.4f channel: %9.4f controller: %9.4f stop: %9.4f\n", status, channel, controller, *i_stop);
+        aeolus->audio->csound_midi(&status, &channel, &controller, i_stop);
         return result;
     }
 };
@@ -500,28 +480,28 @@ extern "C"
             (char*)"aeolus_group_mode",
             sizeof(aeolus_group_mode_t),
             0,
-            3,
+            1,
             (char*)"",
-            (char*)"ikk",
+            (char*)"iii",
             (SUBR) aeolus_group_mode_t::init_,
-            (SUBR) aeolus_group_mode_t::kontrol_,
+            0,
             0,
         },
-        // aeolus_stop i_aeolus, k_stop_button
+        // aeolus_stop i_aeolus, i_stop_button
         {
             (char*)"aeolus_stop",
             sizeof(aeolus_stop_t),
             0,
-            3,
+            1,
             (char*)"",
-            (char*)"ik",
+            (char*)"ii",
             (SUBR) aeolus_stop_t::init_,
-            (SUBR) aeolus_stop_t::kontrol_,
+            0,
             0,
         },
         // aeolus_command i_aeolus, S_command
         {
-            (char*)"aeolus_note",
+            (char*)"aeolus_command",
             sizeof(aeolus_command_t),
             0,
             1,
@@ -590,14 +570,20 @@ extern "C"
 
     PUBLIC int csoundModuleDestroy(CSOUND *csound)
     {
-        csound->Message(csound, "Aeolus: csoundModuleDestroy...\n");
+        if (csound->GetDebug(csound)) {
+            csound->Message(csound, "Aeolus: csoundModuleDestroy(%p)...\n",
+                            csound);
+        }
         for (auto it = instances_for_ids.begin(); it != instances_for_ids.end(); ++it) {
             auto aeolus = it->second;
             aeolus->iface->send_event (EV_EXIT, 1);
             aeolus->thread.join();
         }
         instances_for_ids.clear();
-        csound->Message(csound, "Aeolus: csoundModuleDestroy.\n");
+        if (csound->GetDebug(csound)) {
+            csound->Message(csound, "Aeolus: csoundModuleDestroy(%p).\n",
+                            csound);
+        }
         return 0;
     }
 

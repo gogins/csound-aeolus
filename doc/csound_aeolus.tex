@@ -107,11 +107,11 @@ Specifies which of 32 banks of presents, and which of 32 presets in each bank, a
 
 \begin{description}
 	\item[Synopsis]
-	\item[]\lstinline|aeolus_preset i_aeolus, k_bank, k_preset|
+	\item[]\lstinline|aeolus_preset i_aeolus, i_bank, i_preset|
 	\item[Parameters]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
-	\item[]\lstinline|k_bank| The bank number, from 1 through 32.
-	\item[]\lstinline|k_preset| The preset number, from 1 through 32.
+	\item[]\lstinline|i_bank| The bank number, from 1 through 32.
+	\item[]\lstinline|i_preset| The preset number, from 1 through 32.
 \end{description}
 
 \subsection*{aeolus\_midi}
@@ -135,23 +135,23 @@ Sets the mode that will be used for controlling a group of stops. The groups are
 
 \begin{description}
 	\item[Synopsis]
-	\item[]\lstinline|aeolus_group_mode i_aeolus, k_group, k_mode|
+	\item[]\lstinline|aeolus_group_mode i_aeolus, i_group, i_mode|
 	\item[Parameters]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
-	\item[]\lstinline|k_group| The number of the group, counting from 0 for the topmost group (e.g.\ Division III) up to the bottom group.
-	\item[]\lstinline|k_mode| The mode of operation for the group: 0 to reset all buttons (disable the group), 1 means setting a stop will turn it off, 2 means setting a stop will turn it on, and 3 means setting a stop will toggle it from off to on, or from on to off.
+	\item[]\lstinline|i_group| The number of the group, counting from 0 for the topmost group (e.g.\ Division III) up to the bottom group.
+	\item[]\lstinline|i_mode| The mode of operation for the group: 0 to reset all buttons (disable the group), 1 means setting a stop will turn it off, 2 means setting a stop will turn it on, and 3 means setting a stop will toggle it from off to on, or from on to off.
 \end{description}
 
 \subsection*{aeolus\_stop}
 
-Invoke a stop according to the mode of operation previously specified for its group.
+Invoke a stop according to the mode of operation previously specified for its group. \emph{Note}: Currently, this opcode does not work. What does work is to set up presets with different combinations of stops, and to select new presets at different times rather than setting individual stops.
 
 \begin{description}
 	\item[Synopsis]
-	\item[]\lstinline|aeolus_stop i_aeolus, k_stop_button|
+	\item[]\lstinline|aeolus_stop i_aeolus, i_stop_button|
 	\item[Parameters]
 	\item[]\lstinline|i_aeolus| The handle for a running instance of Aeolus.
-	\item[]\lstinline|k_stop_button| The number of the stop button. Stops are numbered from 0 at the top left of the user interface on up to the bottom right of the interface.
+	\item[]\lstinline|i_stop_button| The number of the stop button. Stops are numbered from 0 at the top left of the user interface on up to the bottom right of the interface.
 \end{description}
 
 \subsection*{aeolus\_note}
@@ -196,16 +196,18 @@ Outputs all audio synthesized for each note of an Aeolus instance. This opcode s
 \section{User Guide}
 
 Before using these opcodes, you should install the regular Aeolus program including stops. \emph{Nota bene}, Aeolus can be quirky to set up. My recommendations are:
+
 \begin{enumerate}
 	\item Create an empty \lstinline|.aeolusrc| file in your home directory.
-	\item Copy the entire \lstinline|stops-0.3.0| tree to your project directory, so that stops and presets can be saved that are specific to your project.
+	\item Copy the entire \lstinline|stops-0.3.0| tree to your project directory, so that stops and presets can be saved that are specific to your project, and will
+    not be overwritten by other projects.
 	\item Run the Aeolus program using the ALSA driver (not Jack) and referencing your project stops, e.g.\ \lstinline|aeolus -S stops-0.3.0 -I Aeolus -A -d hw:2,0|.
 	\item Configure the presets you need with the stops that you need. Be sure to save each preset and then save the instrument definition.
-	\item Before existing the Aeolus program, use the Instrument dialog, Retune button to generate the waveform files for your organ.
+	\item Before exiting the Aeolus program, use the \emph{Instrument} dialog, \emph{Retune} button to generate the waveform files for your organ.
 	\item When you run Csound, do \emph{not} use the \lstinline|o_presets_in_home| option, so that the Aeolus opcodes will read presets from your project directory.
 \end{enumerate}
 
-You will probably not get any sound unless Aeolus prints that it has saved a
+\noindent You will probably not get any sound unless Aeolus prints that it has saved a
 definition and some presets!
 
 Install the \lstinline|libcsound_aeolus.so| plugin in your Csound plugins
@@ -214,10 +216,10 @@ directory, e.g. \lstinline|/usr/local/lib/csound/plugins64-6.0|.
 In the header of your Csound orchestra, instantiate Aeolus as a global variable as follows:
 
 \begin{lstlisting}
-gi_aeolus aeolus_init "/home/mkg/stops-0.3.0", "Aeolus", "waves", 0, 5
+gi_aeolus aeolus_init "stops-0.3.0", "Aeolus", "waves", 0, 10
 \end{lstlisting}
 
-\noindent In the orchestra, define an instrument that will send notes from the Csound score to Aeolus:
+In your Csound orchestra, define an instrument that will send notes from the Csound score to Aeolus:
 
 \begin{lstlisting}
 instr 1
@@ -228,8 +230,7 @@ endin
 
 \noindent Also define an always-on instrument that will route the audio output
 from Aeolus either to the output soundfile (as shown) or to further processing
-in Csound. In this instrument, you should also set up your presets, stops, or
-other configuration:
+in Csound. In this instrument, you should also set up your initial preset:
 
 \begin{lstlisting}
 instr 2
