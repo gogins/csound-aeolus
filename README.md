@@ -7,6 +7,18 @@ Michael Gogins<br>
 https://github.com/gogins<br>
 http://michaelgogins.tumblr.com
 
+## Deprecation Notice
+
+Currently, I am not maintaining this repository. In general, my priority is 
+composing music, not programming. However, I do create open-source GitHub 
+repositories in order to share tools that I make for composing. As my 
+working methods change, so do the tools I make. 
+
+I now use the commercial (and very excellent!) [Organtec](https://www.modartt.com/organteq) 
+plugin from Modartt to synthesize the sounds of pipe organs.
+
+However, this repository will remain available.
+
 ## Introduction
 
 This project provides a set of Csound plugin opcodes encapsulating the 
